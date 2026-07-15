@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git --version)",
+      "Bash(claude --version)",
+      "Bash(flutter --version)",
+      "Bash(flutter doctor *)",
+      "Bash(rm -f /c/actmp/flutter_windows_3.44.5-stable.zip /c/actmp/android-studio-installer.exe /c/actmp/cmdline-tools.zip /c/actmp/yes.txt)",
+      "Bash(rm -rf /c/actmp/cmdline-tools-extracted)",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\sdk\\\\platform-tools\\\\adb.exe\"; & $adb devices -l; Write-Output \"---boot check---\"; & $adb -s emulator-5554 shell getprop sys.boot_completed 2>&1; Write-Output \"---adb version---\"; & $adb version)",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\sdk\\\\platform-tools\\\\adb.exe\"; & $adb devices -l)",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\sdk\\\\platform-tools\\\\adb.exe\"; & $adb kill-server; Start-Sleep -Seconds 2; & $adb start-server; Start-Sleep -Seconds 2; & $adb devices -l)",
+      "PowerShell($emu = \"$env:LOCALAPPDATA\\\\Android\\\\sdk\\\\emulator\\\\emulator.exe\"; Test-Path $emu; & $emu -list-avds)",
+      "PowerShell(Get-Process -Id 7152 -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-NetTCPConnection -OwningProcess 7152 -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process -Id 7152 -ErrorAction SilentlyContinue | Select-Object ProcessName, Id, CPU, StartTime; Write-Output \"---connections---\"; \\(Get-NetTCPConnection -OwningProcess 7152 -ErrorAction SilentlyContinue | Where-Object { $_.State -eq \"Established\" }\\).Count)",
+      "PowerShell(\\(Get-Process -Id 7152 -ErrorAction SilentlyContinue\\).CPU; \\(Get-NetTCPConnection -OwningProcess 7152 -ErrorAction SilentlyContinue | Where-Object { $_.State -eq \"Established\" }\\).Count)",
+      "PowerShell(Get-Content \"$env:TEMP\\\\pixel7_emulator.log\" -Tail 40)",
+      "PowerShell(Get-Process | Where-Object {$_.ProcessName -eq \"java\"} | Select-Object Id, CPU, StartTime)",
+      "Bash(rm -f screen_*.png ui*.xml)",
+      "Bash(rm -f screen_*.png ui*.xml && ls *.png *.xml 2>&1)"
+    ]
+  }
+}
