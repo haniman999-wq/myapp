@@ -46,6 +46,10 @@ class _IdeaFormScreenState extends State<IdeaFormScreen> {
     Navigator.of(context).pop(result);
   }
 
+  void _goBack() {
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,10 +101,28 @@ class _IdeaFormScreenState extends State<IdeaFormScreen> {
               },
             ),
             const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _submit,
-              icon: const Icon(Icons.save),
-              label: Text(_isEditing ? '수정 완료' : '저장하기'),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _goBack,
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('이전'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.grey[700],
+                      side: BorderSide(color: Colors.grey[400]!),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _submit,
+                    icon: const Icon(Icons.save),
+                    label: Text(_isEditing ? '수정 완료' : '저장하기'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
