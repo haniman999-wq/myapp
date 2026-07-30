@@ -65,6 +65,11 @@ class IdeaDatabase {
     await db.delete('ideas', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<void> deleteAllIdeas() async {
+    final db = await database;
+    await db.delete('ideas');
+  }
+
   Future<void> toggleFavorite(int id, bool isFavorite) async {
     final db = await database;
     await db.update(

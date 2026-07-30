@@ -18,7 +18,23 @@
       "PowerShell(Get-Content \"$env:TEMP\\\\pixel7_emulator.log\" -Tail 40)",
       "PowerShell(Get-Process | Where-Object {$_.ProcessName -eq \"java\"} | Select-Object Id, CPU, StartTime)",
       "Bash(rm -f screen_*.png ui*.xml)",
-      "Bash(rm -f screen_*.png ui*.xml && ls *.png *.xml 2>&1)"
+      "Bash(rm -f screen_*.png ui*.xml && ls *.png *.xml 2>&1)",
+      "Bash(flutter devices *)",
+      "Bash(flutter run *)",
+      "Bash(adb -s emulator-5554 emu avd name)",
+      "Bash(adb -s emulator-5554 shell settings put secure show_ime_with_hard_keyboard 1)",
+      "Bash(adb -s emulator-5554 shell settings get secure show_ime_with_hard_keyboard)",
+      "Bash(flutter analyze *)",
+      "Bash(adb devices *)",
+      "Bash(adb kill-server *)",
+      "Bash(adb start-server *)",
+      "Bash(flutter emulators *)",
+      "Bash(adb -s emulator-5554 shell am force-stop com.ideavault.idea_vault)",
+      "Bash(adb -s emulator-5554 shell am start -n com.ideavault.idea_vault/.MainActivity)",
+      "Bash(adb -s emulator-5554 exec-out screencap -p)",
+      "Bash(adb wait-for-device *)",
+      "Bash(adb shell *)",
+      "Bash(git add *)"
     ]
   }
 }

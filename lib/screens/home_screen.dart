@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('삭제'),
+            child: const Text('삭제', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -130,6 +130,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () => _toggleFavorite(idea),
                   ),
                   onTap: () => _openIdeaForm(idea: idea),
+                  onLongPress: () async {
+                    final confirmed = await _confirmDelete(idea);
+                    if (confirmed) _deleteIdea(idea);
+                  },
                 ),
               );
             },
