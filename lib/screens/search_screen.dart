@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../models/idea.dart';
-import '../services/idea_database.dart';
-import 'idea_form_screen.dart';
-
-const Color _kPrimaryBlue = Color(0xFF0080F7);
+import '../models/customer.dart';
+import '../services/customer_database.dart';
+import '../theme.dart';
+import '../utils/date_format.dart';
+import 'customer_form_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -14,15 +14,15 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final _database = IdeaDatabase.instance;
+  final _database = CustomerDatabase.instance;
   final _searchController = TextEditingController();
-  late Future<List<Idea>> _ideasFuture;
+  late Future<List<Customer>> _customersFuture;
   String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _ideasFuture = _database.getAllIdeas();
+    _customersFuture = _database.getAllCustomers();
     _searchController.addListener(() {
       setState(() {
         _query = _searchController.text.trim();
@@ -36,31 +36,35 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  List<Idea> _filterIdeas(List<Idea> ideas) {
+  List<Customer> _filter(List<Customer> customers) {
     final query = _query.toLowerCase();
-    return ideas
-        .where((idea) =>
-            idea.title.toLowerCase().contains(query) ||
-            idea.content.toLowerCase().contains(query))
+    return customers
+        .where((c) =>
+            c.name.toLowerCase().contains(query) ||
+            c.phone.replaceAll('-', '').contains(query.replaceAll('-', '')))
         .toList();
   }
 
-  Future<void> _openIdea(Idea idea) async {
-    final result = await Navigator.of(context).push<Idea>(
-      MaterialPageRoute(builder: (_) => IdeaFormScreen(idea: idea)),
+  Future<void> _openCustomer(Customer customer) async {
+    final result = await Navigator.of(context).push<Customer>(
+      MaterialPageRoute(builder: (_) => CustomerFormScreen(customer: customer)),
     );
 
     if (result == null) return;
-    await _database.updateIdea(result);
+    await _database.updateCustomer(result);
     setState(() {
-      _ideasFuture = _database.getAllIdeas();
+      _customersFuture = _database.getAllCustomers();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('검색')),
+      appBar: AppBar(
+        backgroundColor: kPrimaryGreen,
+        foregroundColor: Colors.white,
+        title: const Text('고객 검색'),
+      ),
       body: Column(
         children: [
           Padding(
@@ -68,18 +72,18 @@ class _SearchScreenState extends State<SearchScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: '아이디어 검색',
+                hintText: '고객명 또는 전화번호 검색',
                 prefixIcon: const Icon(Icons.search),
                 border: const OutlineInputBorder(),
                 focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: _kPrimaryBlue, width: 2),
+                  borderSide: BorderSide(color: kPrimaryGreen, width: 2),
                 ),
               ),
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<Idea>>(
-              future: _ideasFuture,
+            child: FutureBuilder<List<Customer>>(
+              future: _customersFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());
@@ -87,15 +91,15 @@ class _SearchScreenState extends State<SearchScreen> {
 
                 if (_query.isEmpty) {
                   return const Center(
-                    child: Text('찾고 싶은 아이디어를 검색해보세요 🔍'),
+                    child: Text('찾고 싶은 고객을 검색해보세요 🔍'),
                   );
                 }
 
-                final ideas = snapshot.data ?? [];
-                final filtered = _filterIdeas(ideas);
+                final customers = snapshot.data ?? [];
+                final filtered = _filter(customers);
 
                 if (filtered.isEmpty) {
-                  return const Center(child: Text('찾는 아이디어가 없어요'));
+                  return const Center(child: Text('찾는 고객이 없어요'));
                 }
 
                 return ListView.separated(
@@ -103,19 +107,19 @@ class _SearchScreenState extends State<SearchScreen> {
                   itemCount: filtered.length,
                   separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, index) {
-                    final idea = filtered[index];
+                    final customer = filtered[index];
                     return ListTile(
+                      leading: const Icon(Icons.person_outline),
                       title: Text(
-                        idea.title,
+                        customer.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        idea.content,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        '${customer.phone}  ·  최종내원 ${formatDate(customer.lastVisit)}',
                       ),
-                      onTap: () => _openIdea(idea),
+                      onTap: () => _openCustomer(customer),
                     );
                   },
                 );

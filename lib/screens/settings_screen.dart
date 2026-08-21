@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../services/idea_database.dart';
-
-const Color _kPrimaryBlue = Color(0xFF0080F7);
+import '../services/customer_database.dart';
+import '../theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -12,7 +11,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _database = IdeaDatabase.instance;
+  final _database = CustomerDatabase.instance;
   late Future<int> _countFuture;
 
   @override
@@ -23,7 +22,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _reloadCount() {
     setState(() {
-      _countFuture = _database.getAllIdeas().then((ideas) => ideas.length);
+      _countFuture =
+          _database.getAllCustomers().then((customers) => customers.length);
     });
   }
 
@@ -32,7 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('전체 삭제'),
-        content: const Text('정말 다 지울까요?\n삭제하면 되돌릴 수 없습니다.'),
+        content: const Text('모든 고객 정보를 지울까요?\n삭제하면 되돌릴 수 없습니다.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -47,7 +47,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true) {
-      await _database.deleteAllIdeas();
+      await _database.deleteAllCustomers();
       _reloadCount();
     }
   }
@@ -55,7 +55,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('설정')),
+      appBar: AppBar(
+        backgroundColor: kPrimaryGreen,
+        foregroundColor: Colors.white,
+        title: const Text('설정'),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -64,20 +68,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               const SizedBox(height: 16),
               const Text(
-                '아이디어 저장소',
+                '내 고객의 모든 것',
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: _kPrimaryBlue,
+                  color: kPrimaryGreenDark,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              const Text(
+                '초진일부터 재진일까지, 고객 치료 스케쥴 관리',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
               FutureBuilder<int>(
                 future: _countFuture,
                 builder: (context, snapshot) {
                   final count = snapshot.data;
                   return Text(
-                    count == null ? '불러오는 중...' : '저장된 아이디어: $count개',
+                    count == null ? '불러오는 중...' : '등록된 고객: $count명',
                     style: const TextStyle(fontSize: 16),
                   );
                 },

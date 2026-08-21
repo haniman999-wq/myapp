@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
 import 'settings_screen.dart';
-
-const Color _kPrimaryBlue = Color(0xFF0080F7);
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -35,7 +34,7 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onTabTapped,
-        selectedItemColor: _kPrimaryBlue,
+        selectedItemColor: kPrimaryGreenDark,
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),

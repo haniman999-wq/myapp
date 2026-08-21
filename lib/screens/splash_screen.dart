@@ -2,9 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
 import 'main_screen.dart';
-
-const Color _kPrimaryGreen = Color(0xFF38C77F);
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -79,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _kPrimaryGreen,
+      backgroundColor: kPrimaryGreen,
       body: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
@@ -93,15 +92,15 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Container(
                       width: 320,
                       height: 320,
-                      color: _kPrimaryGreen,
+                      color: kPrimaryGreen,
                       alignment: Alignment.center,
                       padding: const EdgeInsets.all(24),
                       child: const Text(
-                        '씽크 뱅크\n베리나이스',
+                        '내 고객의\n모든 것',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 30,
+                          fontSize: 34,
                           fontWeight: FontWeight.bold,
                           height: 1.4,
                         ),
