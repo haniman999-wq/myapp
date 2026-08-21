@@ -34,7 +34,13 @@
       "Bash(adb -s emulator-5554 exec-out screencap -p)",
       "Bash(adb wait-for-device *)",
       "Bash(adb shell *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(tee /c/Users/vicki/AppData/Local/Temp/claude/C--myapp/a704af2a-d59c-486a-8bb0-9d54ead26242/scratchpad/flutter_run.log)",
+      "Read(//c/Users/vicki/AppData/Local/Temp/claude/C--myapp/a704af2a-d59c-486a-8bb0-9d54ead26242/tasks/**)",
+      "Bash(break)",
+      "Bash(sleep 3 && adb -s emulator-5554 exec-out screencap -p > /c/Users/vicki/AppData/Local/Temp/claude/C--myapp/a704af2a-d59c-486a-8bb0-9d54ead26242/scratchpad/screen_now.png && echo \"captured\")"
     ]
   }
 }
