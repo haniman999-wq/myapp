@@ -2,7 +2,7 @@
     <!-- 재방문 알림: 재부팅 후에도 예약 알림을 다시 걸기 위해 필요 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <application
-        android:label="idea_vault"
+        android:label="내 환자의 모든 것"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

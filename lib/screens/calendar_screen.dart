@@ -5,6 +5,7 @@ import '../models/appointment.dart';
 import '../models/customer.dart';
 import '../models/customer_overview.dart';
 import '../models/herb_alert.dart';
+import '../services/backup_service.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
@@ -41,6 +42,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _selectedDay = today();
   CalendarFormat _format = CalendarFormat.month;
 
+  /// 백업 안내를 띄울 때 마지막 백업 후 지난 일수. (-1 = 백업한 적 없음, null = 안내 안 함)
+  int? _backupDaysAgo;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +60,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Future<void> _reload() async {
     final overviews = await _database.getOverviews();
+    // 환자가 있는데 백업한 지 오래됐으면 안내 (-1 = 한 번도 안 함)
+    final lastBackup = await _database.getLastBackupAt();
+    final sinceBackup = lastBackup == null
+        ? -1
+        : today().difference(dateOnly(lastBackup)).inDays;
+    final backupDaysAgo =
+        overviews.isNotEmpty &&
+            (sinceBackup < 0 || sinceBackup >= kBackupReminderDays)
+        ? sinceBackup
+        : null;
     final byDay = <DateTime, List<_Entry>>{};
     for (final o in overviews) {
       for (final a in o.appointments) {
@@ -84,6 +98,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       _overviews = overviews;
       _byDay = byDay;
       _herbByDay = herbByDay;
+      _backupDaysAgo = backupDaysAgo;
     });
   }
 
@@ -164,6 +179,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       body: Column(
         children: [
+          if (_backupDaysAgo != null)
+            _BackupReminder(
+              daysAgo: _backupDaysAgo!,
+              onBackup: () async {
+                try {
+                  await BackupService.share();
+                } catch (_) {}
+              },
+            ),
           TableCalendar<_Entry>(
             locale: 'ko_KR',
             firstDay: DateTime(2020),
@@ -543,6 +567,43 @@ class _CustomerPickerDialogState extends State<_CustomerPickerDialog> {
           child: const Text('취소'),
         ),
       ],
+    );
+  }
+}
+
+/// 달력 위 백업 안내 띠.
+class _BackupReminder extends StatelessWidget {
+  const _BackupReminder({required this.daysAgo, required this.onBackup});
+
+  /// -1 = 한 번도 백업 안 함.
+  final int daysAgo;
+  final VoidCallback onBackup;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFFFF3E0),
+      child: InkWell(
+        onTap: onBackup,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+          child: Row(
+            children: [
+              const Icon(Icons.backup_outlined, color: Colors.orange, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  daysAgo < 0
+                      ? '아직 백업하지 않았어요. 데이터를 지키려면 백업해 두세요.'
+                      : '백업한 지 $daysAgo일 지났어요.',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+              TextButton(onPressed: onBackup, child: const Text('지금 백업')),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

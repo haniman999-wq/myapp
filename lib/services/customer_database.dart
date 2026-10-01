@@ -33,8 +33,9 @@ class CustomerDatabase {
     final path = join(databasesPath, 'my_customers.db');
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
+        await _createMetaTable(db);
         await db.execute('''
           CREATE TABLE customers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,7 +63,17 @@ class CustomerDatabase {
           await db.execute('ALTER TABLE customers ADD COLUMN herbStart TEXT');
           await _createHerbTable(db);
         }
+        if (oldVersion < 5) {
+          // ver.5: 앱 설정값 (마지막 백업 시각 등)
+          await _createMetaTable(db);
+        }
       },
+    );
+  }
+
+  Future<void> _createMetaTable(DatabaseExecutor db) async {
+    await db.execute(
+      'CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
     );
   }
 
@@ -329,6 +340,81 @@ class CustomerDatabase {
         whereArgs: [customerId],
       );
     });
+    notifyChanged();
+  }
+
+  // ───────── 백업 / 복원 ─────────
+
+  /// 백업에 담는 표. (meta 는 기기별 설정이라 제외)
+  static const _backupTables = [
+    'customers',
+    'appointments',
+    'contact_logs',
+    'herb_alerts',
+  ];
+
+  static const backupFormat = 'my-patients-backup';
+  static const _lastBackupKey = 'lastBackupAt';
+
+  /// 모든 데이터를 JSON 으로 바꿀 수 있는 지도(Map)로 꺼냅니다.
+  Future<Map<String, Object?>> exportData() async {
+    final db = await database;
+    return {
+      'format': backupFormat,
+      'formatVersion': 1,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'tables': {
+        for (final t in _backupTables) t: await db.query(t, orderBy: 'id'),
+      },
+    };
+  }
+
+  /// 백업 데이터로 지금 데이터를 통째로 바꿉니다. 형식이 틀리면 [FormatException].
+  Future<void> importData(Map<String, Object?> data) async {
+    if (data['format'] != backupFormat || data['tables'] is! Map) {
+      throw const FormatException('이 앱의 백업 파일이 아니에요');
+    }
+    final tables = (data['tables'] as Map).cast<String, Object?>();
+    final db = await database;
+    await db.transaction((txn) async {
+      for (final t in _backupTables) {
+        // 지금 표에 있는 칸만 넣습니다. (다른 버전의 백업도 받을 수 있게)
+        final columns = {
+          for (final c in await txn.rawQuery('PRAGMA table_info($t)'))
+            c['name'] as String,
+        };
+        await txn.delete(t);
+        final rows = tables[t];
+        if (rows is! List) continue;
+        for (final row in rows) {
+          if (row is! Map) continue;
+          await txn.insert(t, {
+            for (final e in row.entries)
+              if (columns.contains(e.key)) e.key as String: e.value,
+          });
+        }
+      }
+    });
+    notifyChanged();
+  }
+
+  Future<DateTime?> getLastBackupAt() async {
+    final db = await database;
+    final rows = await db.query(
+      'meta',
+      where: 'key = ?',
+      whereArgs: [_lastBackupKey],
+    );
+    if (rows.isEmpty) return null;
+    return DateTime.tryParse(rows.first['value'] as String);
+  }
+
+  Future<void> setLastBackupAt(DateTime at) async {
+    final db = await database;
+    await db.insert('meta', {
+      'key': _lastBackupKey,
+      'value': at.toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
     notifyChanged();
   }
 
