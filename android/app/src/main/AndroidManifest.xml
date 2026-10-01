@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- 재방문 알림: 재부팅 후에도 예약 알림을 다시 걸기 위해 필요 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- 정해둔 알림 시각에 정확히 울리도록 (설정에서 사용자가 허용) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <application
         android:label="내 환자의 모든 것"
         android:name="${applicationName}"

@@ -5,6 +5,7 @@ import '../models/customer_overview.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
+import '../widgets/blink.dart';
 import '../widgets/customer_name.dart';
 import '../widgets/status_chip.dart';
 import 'customer_detail_screen.dart';
@@ -189,7 +190,9 @@ class _CustomerTile extends StatelessWidget {
           ),
           if (needsContact) ...[
             const SizedBox(width: 8),
-            const StatusChip(label: '연락 필요', color: kNoShowRed),
+            const Blink(
+              child: StatusChip(label: '연락 필요', color: kNoShowRed),
+            ),
           ],
           if (needsCheck) ...[
             const SizedBox(width: 6),
@@ -197,7 +200,9 @@ class _CustomerTile extends StatelessWidget {
           ],
           if (overview.needsHerbCheck) ...[
             const SizedBox(width: 6),
-            const StatusChip(label: '복약 확인', color: kHerbPurple),
+            const Blink(
+              child: StatusChip(label: '복약 확인', color: kHerbPurple),
+            ),
           ],
         ],
       ),

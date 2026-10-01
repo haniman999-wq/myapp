@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/splash_screen.dart';
+import 'services/app_navigation.dart';
 import 'services/customer_database.dart';
 import 'services/revisit_notifier.dart';
 import 'theme.dart';
@@ -30,6 +31,7 @@ class MyCustomersApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       title: '내 환자의 모든 것',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: kPrimaryGreen),

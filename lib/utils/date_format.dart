@@ -33,3 +33,10 @@ String toDbDate(DateTime d) {
 /// 같은 날짜인지 (시각 무시).
 bool isSameDate(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// '오전 9:00', '오후 1:30' 형태.
+String formatTimeOfDay(int hour, int minute) {
+  final period = hour < 12 ? '오전' : '오후';
+  final h = hour % 12 == 0 ? 12 : hour % 12;
+  return '$period $h:${minute.toString().padLeft(2, '0')}';
+}

@@ -172,7 +172,7 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
           ),
           const SizedBox(height: 4),
           const Text(
-            '그날 오전 9시에 알림이 오고, 재예약과 상관없이 연락 탭에 표시돼요.',
+            '그날 아침 요약 알림에 들어가고, 재예약과 상관없이 연락 탭에 표시돼요.',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 8),

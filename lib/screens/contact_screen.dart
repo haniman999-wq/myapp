@@ -6,6 +6,7 @@ import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
 import '../utils/phone.dart';
+import '../widgets/blink.dart';
 import '../widgets/customer_name.dart';
 import '../widgets/status_chip.dart';
 import 'customer_detail_screen.dart';
@@ -195,9 +196,11 @@ class _HerbTile extends StatelessWidget {
     final late = today().difference(alert.date).inDays;
     return ListTile(
       onTap: onTap,
-      leading: CircleAvatar(
-        backgroundColor: kHerbPurple.withValues(alpha: 0.12),
-        child: const Text('🌿', style: TextStyle(fontSize: 18)),
+      leading: Blink(
+        child: CircleAvatar(
+          backgroundColor: kHerbPurple.withValues(alpha: 0.12),
+          child: const Text('🌿', style: TextStyle(fontSize: 18)),
+        ),
       ),
       title: CustomerName(customer: overview.customer),
       subtitle: Text(
@@ -248,14 +251,17 @@ class _ContactTile extends StatelessWidget {
       opacity: contacted ? 0.55 : 1,
       child: ListTile(
         onTap: onTap,
-        leading: CircleAvatar(
-          backgroundColor: kNoShowRed.withValues(alpha: 0.12),
-          child: Text(
-            '${overview.daysSinceLastSchedule}일',
-            style: const TextStyle(
-              color: kNoShowRed,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+        leading: Blink(
+          enabled: !contacted,
+          child: CircleAvatar(
+            backgroundColor: kNoShowRed.withValues(alpha: 0.12),
+            child: Text(
+              '${overview.daysSinceLastSchedule}일',
+              style: const TextStyle(
+                color: kNoShowRed,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),

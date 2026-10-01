@@ -3,39 +3,58 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../models/customer_overview.dart';
+import '../utils/date_format.dart';
+import 'app_navigation.dart';
 import 'customer_database.dart';
 
-/// 재방문 알림.
+/// 아침 요약 알림.
 ///
-/// 환자마다 '연락해야 하는 날 오전 9시'에 휴대폰 알림을 예약해 둡니다.
-/// 데이터가 바뀔 때마다 [sync] 로 전부 다시 계산해서 걸기 때문에,
-/// 재예약이 잡히면 그 환자의 알림은 자연스럽게 사라집니다.
+/// 매일 정해둔 시각(기본 오전 9시)에 "오늘 연락할 환자 N명 (복약 확인 · 재방문)"
+/// 알림을 한 번 보냅니다. 앞으로 [_daysAhead]일치를 미리 걸어두고,
+/// 데이터가 바뀔 때마다 [sync] 로 전부 다시 계산합니다.
+/// 알림을 누르면 앱의 '연락' 탭이 열립니다.
 class RevisitNotifier {
   RevisitNotifier._internal();
 
   static final RevisitNotifier instance = RevisitNotifier._internal();
 
-  static const _notifyHour = 9;
+  /// 며칠 앞까지 요약 알림을 미리 걸어둘지.
+  static const _daysAhead = 30;
 
-  /// 복약 알림 id 는 환자 id(재방문 알림)와 겹치지 않게 이 값을 더해 씁니다.
-  static const _herbIdBase = 1000000;
+  /// 요약 알림 id = 기준 + 오늘로부터 며칠째.
+  static const _summaryIdBase = 2000;
+
+  /// 알림 내용에 이름을 몇 명까지 적을지.
+  static const _maxNames = 4;
 
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
   bool _syncing = false;
   bool _syncAgain = false;
 
+  AndroidFlutterLocalNotificationsPlugin? get _android => _plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+
   Future<void> init() async {
     // 지금은 안드로이드 한 기기에서만 사용합니다.
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     try {
       tz_data.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('Asia/Seoul'));
       await _plugin.initialize(
         settings: const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         ),
+        // 앱이 켜져 있을 때 알림을 누르면
+        onDidReceiveNotificationResponse: (_) => openContactTab(),
       );
+      // 꺼져 있던 앱을 알림으로 열었으면 첫 화면을 '연락' 탭으로
+      final launch = await _plugin.getNotificationAppLaunchDetails();
+      if (launch?.didNotificationLaunchApp ?? false) {
+        tabRequest.value = AppTab.contact;
+      }
       _ready = true;
     } catch (e) {
       debugPrint('알림 초기화 실패: $e');
@@ -46,17 +65,34 @@ class RevisitNotifier {
   Future<void> requestPermission() async {
     if (!_ready) return;
     try {
-      await _plugin
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.requestNotificationsPermission();
+      await _android?.requestNotificationsPermission();
     } catch (e) {
       debugPrint('알림 권한 요청 실패: $e');
     }
   }
 
-  /// 모든 환자의 재방문 알림을 다시 계산해서 예약합니다.
+  /// 정해둔 시각에 정확히 울릴 수 있는지 (안드로이드 '알람 및 리마인더' 권한).
+  Future<bool> canNotifyOnTime() async {
+    if (!_ready) return true;
+    try {
+      return await _android?.canScheduleExactNotifications() ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// '알람 및 리마인더' 권한 설정 화면을 엽니다.
+  Future<void> requestOnTimePermission() async {
+    if (!_ready) return;
+    try {
+      await _android?.requestExactAlarmsPermission();
+    } catch (e) {
+      debugPrint('정확한 알림 권한 요청 실패: $e');
+    }
+    await sync();
+  }
+
+  /// 아침 요약 알림을 다시 계산해서 예약합니다.
   Future<void> sync() async {
     if (!_ready) return;
     if (_syncing) {
@@ -78,62 +114,84 @@ class RevisitNotifier {
 
   Future<void> _scheduleAll() async {
     await _plugin.cancelAll();
-    final now = tz.TZDateTime.now(tz.local);
-    final overviews = await CustomerDatabase.instance.getOverviews();
+    final db = CustomerDatabase.instance;
+    final overviews = await db.getOverviews();
+    final (hour, minute) = await db.getNotifyTime();
+    final mode = await canNotifyOnTime()
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+    final now = DateTime.now();
+    final start = today();
 
-    tz.TZDateTime at(DateTime d) =>
-        tz.TZDateTime(tz.local, d.year, d.month, d.day, _notifyHour);
-
-    for (final o in overviews) {
-      // 한약 복약 확인: 재예약과 상관없이 정해둔 날마다 무조건 알림
-      if (o.customer.isHerbal) {
-        for (final alert in o.pendingHerbAlerts) {
-          final when = at(alert.date);
-          final alertId = alert.id;
-          if (alertId == null || !when.isAfter(now)) continue;
-          await _plugin.zonedSchedule(
-            id: _herbIdBase + alertId,
-            scheduledDate: when,
-            title: '🌿 ${o.herbLabel(alert)} 복약 확인',
-            body: '${o.customer.name} 환자에게 복약 확인 전화를 해주세요.',
-            notificationDetails: const NotificationDetails(
-              android: AndroidNotificationDetails(
-                'herb',
-                '한약 복약 알림',
-                channelDescription: '한약 복약 시작 후 정해둔 날의 확인 전화 알림',
-                importance: Importance.high,
-                priority: Priority.high,
-              ),
-            ),
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          );
-        }
-      }
-
-      final due = o.contactDueDate;
-      final id = o.customer.id;
-      if (due == null || id == null) continue;
-
-      final when = at(due);
-      // 이미 지난 건은 앱 안 '연락 필요' 탭에서 보여줍니다.
+    for (var i = 0; i <= _daysAhead; i++) {
+      final day = start.add(Duration(days: i));
+      // 휴대폰에 설정된 시간대 기준 시각 → 절대 시각(UTC)으로 예약
+      final when = DateTime(day.year, day.month, day.day, hour, minute);
+      // 오늘 알림 시각이 이미 지났으면 앱 안 '연락' 탭에서 보여줍니다.
       if (!when.isAfter(now)) continue;
 
+      final summary = DailySummary.of(overviews, day);
+      if (summary.isEmpty) continue;
+
       await _plugin.zonedSchedule(
-        id: id,
-        scheduledDate: when,
-        title: '재방문 연락 필요',
-        body: '${o.customer.name} 환자가 마지막 방문 후 2주가 지났어요. 연락해보세요.',
-        notificationDetails: const NotificationDetails(
+        id: _summaryIdBase + i,
+        scheduledDate: tz.TZDateTime.from(when, tz.UTC),
+        title: summary.title,
+        body: summary.body,
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
-            'revisit',
-            '재방문 알림',
-            channelDescription: '마지막 방문 후 2주 동안 재예약이 없는 환자 알림',
+            'daily_summary',
+            '오늘의 연락 요약',
+            channelDescription: '매일 아침, 오늘 연락할 환자(복약 확인·재방문)를 모아서 알려줍니다',
             importance: Importance.high,
             priority: Priority.high,
+            // 잠금화면에서는 환자 이름을 가립니다.
+            visibility: NotificationVisibility.private,
+            styleInformation: BigTextStyleInformation(summary.body),
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: mode,
       );
     }
+  }
+}
+
+/// 하루치 요약 알림 내용.
+class DailySummary {
+  DailySummary._(this.herbNames, this.revisitNames);
+
+  /// [day] 아침 기준, 지금 데이터대로라면 연락해야 할 환자들.
+  factory DailySummary.of(List<CustomerOverview> overviews, DateTime day) {
+    final herb = <String>[];
+    final revisit = <String>[];
+    for (final o in overviews) {
+      final h = o.herbCheckDueOn(day);
+      final r = o.revisitDueOn(day);
+      if (h) herb.add(o.customer.name);
+      // 둘 다 해당하면 복약 확인 쪽으로 한 번만 셉니다.
+      if (r && !h) revisit.add(o.customer.name);
+    }
+    return DailySummary._(herb, revisit);
+  }
+
+  final List<String> herbNames;
+  final List<String> revisitNames;
+
+  int get total => herbNames.length + revisitNames.length;
+  bool get isEmpty => total == 0;
+
+  String get title {
+    final parts = [
+      if (herbNames.isNotEmpty) '복약 확인 ${herbNames.length}명',
+      if (revisitNames.isNotEmpty) '재방문 ${revisitNames.length}명',
+    ];
+    return '오늘 연락할 환자 $total명 (${parts.join(' · ')})';
+  }
+
+  String get body {
+    final names = [...herbNames.map((n) => '🌿$n'), ...revisitNames];
+    final shown = names.take(RevisitNotifier._maxNames).join(', ');
+    final rest = names.length - RevisitNotifier._maxNames;
+    return rest > 0 ? '$shown 외 $rest명 · 눌러서 연락하기' : '$shown · 눌러서 연락하기';
   }
 }

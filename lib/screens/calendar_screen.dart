@@ -9,6 +9,7 @@ import '../services/backup_service.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
+import '../widgets/blink.dart';
 import '../widgets/customer_name.dart';
 import '../widgets/appointment_sheet.dart';
 import '../widgets/status_chip.dart';
@@ -301,9 +302,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           ),
                           title: CustomerName(customer: o.customer),
                           subtitle: Text(o.customer.phone),
-                          trailing: StatusChip(
-                            label: o.herbLabel(a),
-                            color: kHerbPurple,
+                          // 오늘이거나 지났는데 아직 확인 안 했으면 깜빡임
+                          trailing: Blink(
+                            enabled: a.isDue,
+                            child: StatusChip(
+                              label: o.herbLabel(a),
+                              color: kHerbPurple,
+                            ),
                           ),
                         ),
                     ],

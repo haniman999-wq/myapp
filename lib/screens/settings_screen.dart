@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/customer_overview.dart';
 import '../services/backup_service.dart';
 import '../services/customer_database.dart';
+import '../services/revisit_notifier.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
 
@@ -17,6 +18,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _database = CustomerDatabase.instance;
   late Future<int> _countFuture;
   late Future<DateTime?> _lastBackupFuture;
+  late Future<(int, int)> _notifyTimeFuture;
+  late Future<bool> _onTimeFuture;
   bool _busy = false;
 
   @override
@@ -38,6 +41,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         (customers) => customers.length,
       );
       _lastBackupFuture = _database.getLastBackupAt();
+      _notifyTimeFuture = _database.getNotifyTime();
+      _onTimeFuture = RevisitNotifier.instance.canNotifyOnTime();
     });
   }
 
@@ -102,6 +107,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await BackupService.restore(backup);
     if (mounted) _toast('환자 ${backup.patientCount}명을 복원했어요');
   });
+
+  Future<void> _pickNotifyTime() async {
+    final (hour, minute) = await _notifyTimeFuture;
+    if (!mounted) return;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: hour, minute: minute),
+      helpText: '아침 요약 알림 시간',
+    );
+    if (picked == null) return;
+    // 저장하면 데이터 변경 알림이 나가고, 알림도 새 시간으로 다시 예약됩니다.
+    await _database.setNotifyTime(picked.hour, picked.minute);
+    if (!mounted) return;
+    _toast('매일 ${formatTimeOfDay(picked.hour, picked.minute)}에 알려드릴게요');
+  }
+
+  Future<void> _allowOnTime() async {
+    await RevisitNotifier.instance.requestOnTimePermission();
+    if (mounted) _reload();
+  }
 
   Future<void> _confirmDeleteAll() async {
     final confirmed = await showDialog<bool>(
@@ -176,16 +201,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onRestore: _restore,
           ),
           const SizedBox(height: 12),
-          const ListTile(
-            leading: Icon(
-              Icons.notifications_active_outlined,
-              color: kPrimaryGreenDark,
-            ),
-            title: Text('재방문 알림'),
-            subtitle: Text(
-              '마지막 방문 후 $kRevisitDays일 동안 재예약이 없으면 '
-              '그날 오전 9시에 알림을 보내고 \'연락\' 탭에 표시합니다.',
-            ),
+          _NotifyCard(
+            timeFuture: _notifyTimeFuture,
+            onTimeFuture: _onTimeFuture,
+            onPickTime: _pickNotifyTime,
+            onAllowOnTime: _allowOnTime,
           ),
           const SizedBox(height: 24),
           FilledButton(
@@ -286,6 +306,83 @@ class _BackupCard extends StatelessWidget {
               style: OutlinedButton.styleFrom(foregroundColor: Colors.orange),
               icon: const Icon(Icons.restore),
               label: const Text('백업 파일에서 복원'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 알림 설정 카드: 아침 요약 알림 시각 + 정확한 시간 허용.
+class _NotifyCard extends StatelessWidget {
+  const _NotifyCard({
+    required this.timeFuture,
+    required this.onTimeFuture,
+    required this.onPickTime,
+    required this.onAllowOnTime,
+  });
+
+  final Future<(int, int)> timeFuture;
+  final Future<bool> onTimeFuture;
+  final VoidCallback onPickTime;
+  final VoidCallback onAllowOnTime;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FutureBuilder<(int, int)>(
+              future: timeFuture,
+              builder: (context, snapshot) {
+                final (hour, minute) = snapshot.data ?? (9, 0);
+                return ListTile(
+                  leading: const Icon(
+                    Icons.notifications_active_outlined,
+                    color: kPrimaryGreenDark,
+                  ),
+                  title: const Text('아침 요약 알림 시간'),
+                  subtitle: const Text('누르면 바꿀 수 있어요'),
+                  trailing: Text(
+                    formatTimeOfDay(hour, minute),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: kPrimaryGreenDark,
+                    ),
+                  ),
+                  onTap: onPickTime,
+                );
+              },
+            ),
+            FutureBuilder<bool>(
+              future: onTimeFuture,
+              builder: (context, snapshot) {
+                if (snapshot.data != false) return const SizedBox.shrink();
+                return ListTile(
+                  leading: const Icon(Icons.alarm, color: Colors.orange),
+                  title: const Text('정확한 시간에 알림 받기'),
+                  subtitle: const Text(
+                    '허용하지 않으면 휴대폰이 배터리를 아끼느라 알림이 최대 1시간 늦게 올 수 있어요. '
+                    '눌러서 \'알람 및 리마인더\'를 허용해 주세요.',
+                  ),
+                  onTap: onAllowOnTime,
+                );
+              },
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Text(
+                '매일 이 시간에 그날 연락할 환자(🌿 복약 확인 · 재방문)를 모아 한 번 알려드려요. '
+                '처리하지 않은 환자는 다음 날 아침에도 다시 알려드려요. '
+                '알림을 누르면 \'연락\' 탭이 열려요.\n'
+                '재방문: 마지막 방문 후 $kRevisitDays일 동안 재예약이 없을 때.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
             ),
           ],
         ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../services/app_navigation.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
+import '../widgets/blink.dart';
 import 'calendar_screen.dart';
 import 'contact_screen.dart';
 import 'home_screen.dart';
@@ -27,14 +29,25 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _database.changes.addListener(_reloadCount);
+    tabRequest.addListener(_handleTabRequest);
     _reloadCount();
+    // 알림으로 앱을 연 경우 첫 화면부터 '연락' 탭
+    _handleTabRequest();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _database.changes.removeListener(_reloadCount);
+    tabRequest.removeListener(_handleTabRequest);
     super.dispose();
+  }
+
+  void _handleTabRequest() {
+    final tab = tabRequest.value;
+    if (tab == null) return;
+    tabRequest.value = null;
+    setState(() => _selectedIndex = tab);
   }
 
   /// 앱을 다시 열면 날짜가 바뀌었을 수 있으니 전체를 새로 계산합니다.
@@ -87,7 +100,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             icon: Badge(
               isLabelVisible: _contactCount > 0,
               label: Text('$_contactCount'),
-              child: const Icon(Icons.notifications),
+              child: Blink(
+                enabled: _contactCount > 0,
+                child: const Icon(Icons.notifications),
+              ),
             ),
             label: '연락',
           ),

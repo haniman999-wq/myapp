@@ -398,25 +398,43 @@ class CustomerDatabase {
     notifyChanged();
   }
 
-  Future<DateTime?> getLastBackupAt() async {
+  Future<String?> _getMeta(String key) async {
     final db = await database;
-    final rows = await db.query(
-      'meta',
-      where: 'key = ?',
-      whereArgs: [_lastBackupKey],
-    );
-    if (rows.isEmpty) return null;
-    return DateTime.tryParse(rows.first['value'] as String);
+    final rows = await db.query('meta', where: 'key = ?', whereArgs: [key]);
+    return rows.isEmpty ? null : rows.first['value'] as String;
   }
 
-  Future<void> setLastBackupAt(DateTime at) async {
+  Future<void> _setMeta(String key, String value) async {
     final db = await database;
     await db.insert('meta', {
-      'key': _lastBackupKey,
-      'value': at.toIso8601String(),
+      'key': key,
+      'value': value,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
     notifyChanged();
   }
+
+  Future<DateTime?> getLastBackupAt() async {
+    final value = await _getMeta(_lastBackupKey);
+    return value == null ? null : DateTime.tryParse(value);
+  }
+
+  Future<void> setLastBackupAt(DateTime at) =>
+      _setMeta(_lastBackupKey, at.toIso8601String());
+
+  // ───────── 알림 시간 ─────────
+
+  static const _notifyTimeKey = 'notifyTime';
+
+  /// 아침 요약 알림 시각 (시, 분). 기본 오전 9시.
+  Future<(int, int)> getNotifyTime() async {
+    final value = await _getMeta(_notifyTimeKey);
+    final parts = value?.split(':');
+    if (parts == null || parts.length != 2) return (9, 0);
+    return (int.tryParse(parts[0]) ?? 9, int.tryParse(parts[1]) ?? 0);
+  }
+
+  Future<void> setNotifyTime(int hour, int minute) =>
+      _setMeta(_notifyTimeKey, '$hour:$minute');
 
   // ───────── 화면용 묶음 조회 ─────────
 

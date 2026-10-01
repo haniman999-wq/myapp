@@ -42,6 +42,19 @@ class CustomerOverview {
 
   bool get needsHerbCheck => customer.isHerbal && dueHerbAlerts.isNotEmpty;
 
+  // ───────── 특정 날짜 기준 (아침 요약 알림 예약용) ─────────
+
+  /// [day] 아침에 복약 확인 전화가 필요한지 (지금 데이터가 그대로라면).
+  bool herbCheckDueOn(DateTime day) =>
+      customer.isHerbal &&
+      herbAlerts.any((a) => !a.done && !a.date.isAfter(dateOnly(day)));
+
+  /// [day] 아침에 재방문 연락이 필요한지 (지금 데이터가 그대로라면).
+  bool revisitDueOn(DateTime day) {
+    final due = contactDueDate;
+    return due != null && !dateOnly(day).isBefore(due) && !contactedSinceDue;
+  }
+
   /// '복약 15일' 같은 표시용 문구.
   String herbLabel(HerbAlert alert) {
     final start = customer.herbStart;

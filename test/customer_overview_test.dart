@@ -3,6 +3,7 @@ import 'package:idea_vault/models/appointment.dart';
 import 'package:idea_vault/models/customer.dart';
 import 'package:idea_vault/models/customer_overview.dart';
 import 'package:idea_vault/models/herb_alert.dart';
+import 'package:idea_vault/services/revisit_notifier.dart';
 import 'package:idea_vault/utils/date_format.dart';
 
 CustomerOverview overviewWith(
@@ -118,6 +119,31 @@ void main() {
         herbal: false,
       );
       expect(o.needsHerbCheck, isFalse);
+    });
+  });
+
+  group('아침 요약 알림', () {
+    test('재방문은 기한 날부터, 복약은 알림일부터 요약에 들어간다', () {
+      final revisit = overviewWith([(-10, visited)]); // 4일 뒤 기한
+      final herb = herbOverview(startDaysAgo: 10, alerts: [(5, false)]);
+      final day3 = today().add(const Duration(days: 3));
+      final day5 = today().add(const Duration(days: 5));
+      expect(DailySummary.of([revisit, herb], day3).isEmpty, isTrue);
+      final s = DailySummary.of([revisit, herb], day5);
+      expect(s.total, 2);
+      expect(s.title, '오늘 연락할 환자 2명 (복약 확인 1명 · 재방문 1명)');
+    });
+
+    test('처리 안 한 환자는 다음 날에도 계속 들어간다', () {
+      final herb = herbOverview(startDaysAgo: 15, alerts: [(0, false)]);
+      final tomorrow = today().add(const Duration(days: 1));
+      expect(DailySummary.of([herb], tomorrow).total, 1);
+    });
+
+    test('복약 확인 완료·재예약하면 빠진다', () {
+      final herb = herbOverview(startDaysAgo: 15, alerts: [(0, true)]);
+      final rebooked = overviewWith([(-20, visited), (3, booked)]);
+      expect(DailySummary.of([herb, rebooked], today()).isEmpty, isTrue);
     });
   });
 }
