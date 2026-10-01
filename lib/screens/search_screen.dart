@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../models/customer.dart';
+import '../models/customer_overview.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
-import 'customer_form_screen.dart';
+import 'customer_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -16,13 +16,14 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _database = CustomerDatabase.instance;
   final _searchController = TextEditingController();
-  late Future<List<Customer>> _customersFuture;
+  late Future<List<CustomerOverview>> _customersFuture;
   String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _customersFuture = _database.getAllCustomers();
+    _customersFuture = _database.getOverviews();
+    _database.changes.addListener(_reload);
     _searchController.addListener(() {
       setState(() {
         _query = _searchController.text.trim();
@@ -32,29 +33,36 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
+    _database.changes.removeListener(_reload);
     _searchController.dispose();
     super.dispose();
   }
 
-  List<Customer> _filter(List<Customer> customers) {
+  List<CustomerOverview> _filter(List<CustomerOverview> customers) {
     final query = _query.toLowerCase();
     return customers
-        .where((c) =>
-            c.name.toLowerCase().contains(query) ||
-            c.phone.replaceAll('-', '').contains(query.replaceAll('-', '')))
+        .where(
+          (c) =>
+              c.customer.name.toLowerCase().contains(query) ||
+              c.customer.phone
+                  .replaceAll('-', '')
+                  .contains(query.replaceAll('-', '')),
+        )
         .toList();
   }
 
-  Future<void> _openCustomer(Customer customer) async {
-    final result = await Navigator.of(context).push<Customer>(
-      MaterialPageRoute(builder: (_) => CustomerFormScreen(customer: customer)),
-    );
-
-    if (result == null) return;
-    await _database.updateCustomer(result);
+  void _reload() {
     setState(() {
-      _customersFuture = _database.getAllCustomers();
+      _customersFuture = _database.getOverviews();
     });
+  }
+
+  void _openCustomer(int customerId) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CustomerDetailScreen(customerId: customerId),
+      ),
+    );
   }
 
   @override
@@ -82,7 +90,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<Customer>>(
+            child: FutureBuilder<List<CustomerOverview>>(
               future: _customersFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
@@ -90,9 +98,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 }
 
                 if (_query.isEmpty) {
-                  return const Center(
-                    child: Text('찾고 싶은 고객을 검색해보세요 🔍'),
-                  );
+                  return const Center(child: Text('찾고 싶은 고객을 검색해보세요 🔍'));
                 }
 
                 final customers = snapshot.data ?? [];
@@ -107,7 +113,8 @@ class _SearchScreenState extends State<SearchScreen> {
                   itemCount: filtered.length,
                   separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, index) {
-                    final customer = filtered[index];
+                    final overview = filtered[index];
+                    final customer = overview.customer;
                     return ListTile(
                       leading: const Icon(Icons.person_outline),
                       title: Text(
@@ -117,9 +124,9 @@ class _SearchScreenState extends State<SearchScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        '${customer.phone}  ·  최종내원 ${formatDate(customer.lastVisit)}',
+                        '${customer.phone}  ·  최종내원 ${formatDate(overview.lastVisit)}',
                       ),
-                      onTap: () => _openCustomer(customer),
+                      onTap: () => _openCustomer(customer.id!),
                     );
                   },
                 );

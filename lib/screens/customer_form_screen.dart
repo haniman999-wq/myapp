@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 
 import '../models/customer.dart';
 import '../theme.dart';
-import '../utils/date_format.dart';
 
 class CustomerFormScreen extends StatefulWidget {
   const CustomerFormScreen({super.key, this.customer});
@@ -20,9 +19,6 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
   late final TextEditingController _phoneController;
 
   String _gender = '여';
-  DateTime? _firstVisit;
-  DateTime? _lastVisit;
-  DateTime? _appointment;
 
   bool get _isEditing => widget.customer != null;
 
@@ -33,9 +29,6 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     _nameController = TextEditingController(text: c?.name ?? '');
     _phoneController = TextEditingController(text: c?.phone ?? '');
     _gender = c?.gender ?? '여';
-    _firstVisit = c?.firstVisit;
-    _lastVisit = c?.lastVisit;
-    _appointment = c?.appointment;
   }
 
   @override
@@ -45,34 +38,11 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     super.dispose();
   }
 
-  Future<void> _pickDate({
-    required DateTime? initial,
-    required ValueChanged<DateTime?> onPicked,
-  }) async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial ?? now,
-      firstDate: DateTime(now.year - 5),
-      lastDate: DateTime(now.year + 5),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context)
-                .colorScheme
-                .copyWith(primary: kPrimaryGreen),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) onPicked(picked);
-  }
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final base = widget.customer ??
+    final base =
+        widget.customer ??
         Customer(
           name: '',
           phone: '',
@@ -84,12 +54,6 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
       gender: _gender,
-      firstVisit: _firstVisit,
-      lastVisit: _lastVisit,
-      appointment: _appointment,
-      clearFirstVisit: _firstVisit == null,
-      clearLastVisit: _lastVisit == null,
-      clearAppointment: _appointment == null,
     );
 
     await showDialog<void>(
@@ -221,46 +185,6 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 4),
-            Text(
-              '내원 / 예약 일정',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(color: kPrimaryGreenDark),
-            ),
-            const SizedBox(height: 12),
-            _DateField(
-              label: '최초내원일',
-              value: _firstVisit,
-              onPick: () => _pickDate(
-                initial: _firstVisit,
-                onPicked: (d) => setState(() => _firstVisit = d),
-              ),
-              onClear: () => setState(() => _firstVisit = null),
-            ),
-            const SizedBox(height: 12),
-            _DateField(
-              label: '최종내원일',
-              value: _lastVisit,
-              onPick: () => _pickDate(
-                initial: _lastVisit,
-                onPicked: (d) => setState(() => _lastVisit = d),
-              ),
-              onClear: () => setState(() => _lastVisit = null),
-            ),
-            const SizedBox(height: 12),
-            _DateField(
-              label: '예약일',
-              value: _appointment,
-              onPick: () => _pickDate(
-                initial: _appointment,
-                onPicked: (d) => setState(() => _appointment = d),
-              ),
-              onClear: () => setState(() => _appointment = null),
-            ),
             const SizedBox(height: 28),
             Row(
               children: [
@@ -332,53 +256,6 @@ class _GenderChip extends StatelessWidget {
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DateField extends StatelessWidget {
-  const _DateField({
-    required this.label,
-    required this.value,
-    required this.onPick,
-    required this.onClear,
-  });
-
-  final String label;
-  final DateTime? value;
-  final VoidCallback onPick;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasValue = value != null;
-    return InkWell(
-      onTap: onPick,
-      borderRadius: BorderRadius.circular(8),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: const Icon(Icons.calendar_today_outlined),
-          border: const OutlineInputBorder(),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: kPrimaryGreen.withValues(alpha: 0.5)),
-          ),
-          suffixIcon: hasValue
-              ? IconButton(
-                  icon: const Icon(Icons.close, size: 20),
-                  tooltip: '지우기',
-                  onPressed: onClear,
-                )
-              : null,
-        ),
-        child: Text(
-          hasValue ? formatDate(value) : '날짜 선택',
-          style: TextStyle(
-            fontSize: 16,
-            color: hasValue ? Colors.black87 : Colors.grey,
           ),
         ),
       ),

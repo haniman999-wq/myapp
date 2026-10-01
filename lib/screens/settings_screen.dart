@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/customer_overview.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 
@@ -22,8 +23,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _reloadCount() {
     setState(() {
-      _countFuture =
-          _database.getAllCustomers().then((customers) => customers.length);
+      _countFuture = _database.getAllCustomers().then(
+        (customers) => customers.length,
+      );
     });
   }
 
@@ -91,6 +93,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: const TextStyle(fontSize: 16),
                   );
                 },
+              ),
+              const SizedBox(height: 24),
+              const ListTile(
+                leading: Icon(
+                  Icons.notifications_active_outlined,
+                  color: kPrimaryGreenDark,
+                ),
+                title: Text('재방문 알림'),
+                subtitle: Text(
+                  '마지막 방문 후 $kRevisitDays일 동안 재예약이 없으면 '
+                  '그날 오전 9시에 알림을 보내고 \'연락\' 탭에 표시합니다.',
+                ),
               ),
               const Spacer(),
               SizedBox(

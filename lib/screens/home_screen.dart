@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../models/customer.dart';
+import '../models/customer_overview.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
+import '../widgets/status_chip.dart';
+import 'customer_detail_screen.dart';
 import 'customer_form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -15,33 +18,44 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _database = CustomerDatabase.instance;
-  late Future<List<Customer>> _customersFuture;
+  late Future<List<CustomerOverview>> _overviewsFuture;
 
   @override
   void initState() {
     super.initState();
+    _database.changes.addListener(_reload);
     _reload();
+  }
+
+  @override
+  void dispose() {
+    _database.changes.removeListener(_reload);
+    super.dispose();
   }
 
   void _reload() {
     setState(() {
-      _customersFuture = _database.getAllCustomers();
+      _overviewsFuture = _database.getOverviews();
     });
   }
 
-  Future<void> _openForm({Customer? customer}) async {
+  /// 새 고객을 등록하고 바로 상세 화면으로 이동해 첫 일정을 넣게 합니다.
+  Future<void> _addCustomer() async {
     final result = await Navigator.of(context).push<Customer>(
-      MaterialPageRoute(builder: (_) => CustomerFormScreen(customer: customer)),
+      MaterialPageRoute(builder: (_) => const CustomerFormScreen()),
     );
-
     if (result == null) return;
+    final saved = await _database.insertCustomer(result);
+    if (!mounted) return;
+    _openDetail(saved);
+  }
 
-    if (customer == null) {
-      await _database.insertCustomer(result);
-    } else {
-      await _database.updateCustomer(result);
-    }
-    _reload();
+  void _openDetail(Customer customer) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CustomerDetailScreen(customerId: customer.id!),
+      ),
+    );
   }
 
   Future<bool> _confirmDelete(Customer customer) async {
@@ -49,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('고객 삭제'),
-        content: Text('"${customer.name}" 고객을 삭제할까요?\n삭제하면 되돌릴 수 없습니다.'),
+        content: Text('"${customer.name}" 고객을 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -67,7 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _delete(Customer customer) async {
     await _database.deleteCustomer(customer.id!);
-    _reload();
   }
 
   @override
@@ -78,25 +91,26 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: Colors.white,
         title: const Text('내 고객의 모든 것'),
       ),
-      body: FutureBuilder<List<Customer>>(
-        future: _customersFuture,
+      body: FutureBuilder<List<CustomerOverview>>(
+        future: _overviewsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final customers = snapshot.data ?? [];
+          final overviews = snapshot.data ?? [];
 
-          if (customers.isEmpty) {
+          if (overviews.isEmpty) {
             return const _EmptyState();
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: customers.length,
+            padding: const EdgeInsets.only(top: 8, bottom: 96),
+            itemCount: overviews.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
-              final customer = customers[index];
+              final overview = overviews[index];
+              final customer = overview.customer;
               return Dismissible(
                 key: ValueKey(customer.id),
                 direction: DismissDirection.endToStart,
@@ -112,8 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 confirmDismiss: (_) => _confirmDelete(customer),
                 onDismissed: (_) => _delete(customer),
                 child: _CustomerTile(
-                  customer: customer,
-                  onTap: () => _openForm(customer: customer),
+                  overview: overview,
+                  onTap: () => _openDetail(customer),
                   onLongPress: () async {
                     final confirmed = await _confirmDelete(customer);
                     if (confirmed) _delete(customer);
@@ -127,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: kPrimaryGreen,
         foregroundColor: Colors.white,
-        onPressed: () => _openForm(),
+        onPressed: _addCustomer,
         icon: const Icon(Icons.person_add),
         label: const Text('고객 추가'),
       ),
@@ -137,24 +151,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _CustomerTile extends StatelessWidget {
   const _CustomerTile({
-    required this.customer,
+    required this.overview,
     required this.onTap,
     required this.onLongPress,
   });
 
-  final Customer customer;
+  final CustomerOverview overview;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
+    final customer = overview.customer;
     final isFemale = customer.gender == '여';
-    final noShow = customer.isNoShow;
+    final needsContact = overview.needsContact;
+    final needsCheck = overview.uncheckedBookings.isNotEmpty;
+    final next = overview.nextBooking;
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: (isFemale ? Colors.pink : kPrimaryGreen)
-            .withValues(alpha: 0.15),
+        backgroundColor: (isFemale ? Colors.pink : kPrimaryGreen).withValues(
+          alpha: 0.15,
+        ),
         child: Icon(
           isFemale ? Icons.woman : Icons.man,
           color: isFemale ? Colors.pink : kPrimaryGreenDark,
@@ -169,31 +187,24 @@ class _CustomerTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: noShow ? kNoShowRed : null,
+                color: needsContact ? kNoShowRed : null,
               ),
             ),
           ),
-          if (noShow) ...[
+          if (needsContact) ...[
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: kNoShowRed.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                '예약일 미방문',
-                style: TextStyle(
-                  color: kNoShowRed,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            const StatusChip(label: '연락 필요', color: kNoShowRed),
+          ],
+          if (needsCheck) ...[
+            const SizedBox(width: 6),
+            const StatusChip(label: '내원 확인', color: Colors.orange),
           ],
         ],
       ),
-      subtitle: Text('최종내원일  ${formatDate(customer.lastVisit)}'),
+      subtitle: Text(
+        '최종내원 ${formatDate(overview.lastVisit)}'
+        '  ·  다음예약 ${next == null ? '없음' : formatShortDate(next.date)}',
+      ),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
       onLongPress: onLongPress,
@@ -227,8 +238,8 @@ class _EmptyState extends StatelessWidget {
             Text(
               '오른쪽 아래 + 버튼을 눌러 첫 고객을 등록해보세요.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                color: Theme.of(context).colorScheme.outline,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
