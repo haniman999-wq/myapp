@@ -59,6 +59,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  image: ^4.10.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -101,3 +103,15 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# 앱 아이콘 생성: dart run tool/prepare_icon.dart && dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  android: "ic_launcher"
+  ios: true  # 주의: 생성 후 ios/Runner.xcodeproj/project.pbxproj 변경은 되돌릴 것 (도구 버그)
+  remove_alpha_ios: true
+  min_sdk_android: 21
+  # 안드로이드 8+ 적응형 아이콘: 기종마다 원·둥근사각형으로 잘려도 그림 전체가 보이도록 여백(inset)을 둡니다.
+  adaptive_icon_background: "#2BC392"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  adaptive_icon_foreground_inset: 16
