@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import '../models/appointment.dart';
 import '../models/customer.dart';
 import '../models/customer_overview.dart';
+import '../models/herb_alert.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
 import '../utils/phone.dart';
 import '../widgets/appointment_sheet.dart';
+import '../widgets/customer_name.dart';
 import '../widgets/status_chip.dart';
 import 'customer_form_screen.dart';
+import 'herb_plan_screen.dart';
 
 /// 고객 한 명의 정보와 예약·내원 기록.
 class CustomerDetailScreen extends StatefulWidget {
@@ -84,6 +87,48 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     ).showSnackBar(SnackBar(content: Text('${customer.name} 고객 연락 기록을 남겼어요')));
   }
 
+  void _openHerbPlan(CustomerOverview overview) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => HerbPlanScreen(
+          customer: overview.customer,
+          pendingAlerts: overview.pendingHerbAlerts,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _postponeHerb(Customer customer) async {
+    final days = await showPostponeDialog(context);
+    if (days == null) return;
+    await _database.postponeHerbPlan(customer.id!, days);
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('복약 일정을 $days일 미뤘어요. 알림도 다시 맞췄어요.')));
+  }
+
+  Future<void> _endHerb(Customer customer) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('복약 종료'),
+        content: Text('${customer.name} 고객의 한약 복약을 종료할까요?\n남은 복약 알림이 모두 취소돼요.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('복약 종료'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _database.endHerbPlan(customer.id!);
+  }
+
   void _openSheet(Customer customer, {Appointment? existing}) {
     showAppointmentSheet(
       context,
@@ -118,7 +163,17 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           appBar: AppBar(
             backgroundColor: kPrimaryGreen,
             foregroundColor: Colors.white,
-            title: Text(customer.name),
+            title: Row(
+              children: [
+                Flexible(
+                  child: Text(customer.name, overflow: TextOverflow.ellipsis),
+                ),
+                if (customer.isHerbal) ...[
+                  const SizedBox(width: 8),
+                  const HerbBadge(),
+                ],
+              ],
+            ),
             actions: [
               IconButton(
                 onPressed: () => _edit(customer),
@@ -138,6 +193,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               _SummaryCard(
                 overview: overview,
                 onCall: () => callPhone(context, customer.phone),
+              ),
+              _MemoCard(memo: customer.memo, onEdit: () => _edit(customer)),
+              _HerbCard(
+                overview: overview,
+                onStartOrEdit: () => _openHerbPlan(overview),
+                onPostpone: () => _postponeHerb(customer),
+                onEnd: () => _endHerb(customer),
+                onComplete: (alert) => _database.completeHerbAlert(alert.id!),
               ),
               if (overview.needsContact)
                 _ContactBanner(
@@ -228,6 +291,184 @@ class _SummaryCard extends StatelessWidget {
             ),
             _InfoRow(label: '마지막 연락', value: formatDate(overview.lastContact)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 한약 복약 카드. 복약 중이 아니면 [복약 시작] 버튼만 보여줍니다.
+class _HerbCard extends StatelessWidget {
+  const _HerbCard({
+    required this.overview,
+    required this.onStartOrEdit,
+    required this.onPostpone,
+    required this.onEnd,
+    required this.onComplete,
+  });
+
+  final CustomerOverview overview;
+  final VoidCallback onStartOrEdit;
+  final VoidCallback onPostpone;
+  final VoidCallback onEnd;
+  final ValueChanged<HerbAlert> onComplete;
+
+  @override
+  Widget build(BuildContext context) {
+    final start = overview.customer.herbStart;
+
+    if (start == null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: OutlinedButton.icon(
+          onPressed: onStartOrEdit,
+          icon: const Text('🌿', style: TextStyle(fontSize: 18)),
+          label: const Text('한약 복약 시작'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: kHerbPurple,
+            side: const BorderSide(color: kHerbPurple),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      );
+    }
+
+    final pending = overview.pendingHerbAlerts;
+    final elapsed = today().difference(start).inDays;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kHerbPurple.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kHerbPurple.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const HerbBadge(label: '한약 복약 중'),
+              const Spacer(),
+              TextButton(
+                onPressed: onStartOrEdit,
+                style: TextButton.styleFrom(foregroundColor: kHerbPurple),
+                child: const Text('일정 수정'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '복약 시작 ${formatDateWithWeekday(start)}'
+            '${elapsed >= 0 ? '  ·  오늘 복약 $elapsed일째' : ''}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          if (pending.isEmpty)
+            const Text('남은 복약 알림이 없어요.', style: TextStyle(color: Colors.grey)),
+          for (final a in pending)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                children: [
+                  Icon(
+                    a.isDue
+                        ? Icons.notifications_active
+                        : Icons.notifications_none,
+                    size: 18,
+                    color: a.isDue ? kNoShowRed : kHerbPurple,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    overview.herbLabel(a),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: a.isDue ? kNoShowRed : kHerbPurple,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(formatDateWithWeekday(a.date)),
+                  const Spacer(),
+                  if (a.isDue)
+                    TextButton(
+                      onPressed: () => onComplete(a),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: const Text('확인 완료'),
+                    ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: kHerbPurple),
+                  onPressed: onPostpone,
+                  icon: const Icon(Icons.update, size: 18),
+                  label: const Text('일정 미루기'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onEnd,
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.grey),
+                  child: const Text('복약 종료'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 특이사항 메모. 비어 있으면 '메모 추가' 안내만 보여줍니다.
+class _MemoCard extends StatelessWidget {
+  const _MemoCard({required this.memo, required this.onEdit});
+
+  final String memo;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final empty = memo.trim().isEmpty;
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      color: const Color(0xFFFFF8E1),
+      child: InkWell(
+        onTap: onEdit,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.sticky_note_2_outlined, color: Colors.amber),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '특이사항',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      empty ? '눌러서 메모를 추가하세요' : memo,
+                      style: TextStyle(color: empty ? Colors.grey : null),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

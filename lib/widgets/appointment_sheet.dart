@@ -57,8 +57,8 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
     _status = widget.existing?.status ?? _defaultStatusFor(_date);
   }
 
-  /// 미래 날짜면 '예약', 오늘·과거면 '내원'으로 기본 선택.
-  AppointmentStatus _defaultStatusFor(DateTime date) => date.isAfter(today())
+  /// 오늘·미래 날짜면 '예약', 지난 날짜면 '내원'으로 기본 선택.
+  AppointmentStatus _defaultStatusFor(DateTime date) => !date.isBefore(today())
       ? AppointmentStatus.booked
       : AppointmentStatus.visited;
 

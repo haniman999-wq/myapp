@@ -1,6 +1,7 @@
 import '../utils/date_format.dart';
 import 'appointment.dart';
 import 'customer.dart';
+import 'herb_alert.dart';
 
 /// 마지막 일정 후 며칠이 지나면 연락 대상으로 볼지.
 const int kRevisitDays = 14;
@@ -12,17 +13,41 @@ class CustomerOverview {
   CustomerOverview({
     required this.customer,
     required List<Appointment> appointments,
+    List<HerbAlert> herbAlerts = const [],
     this.lastContact,
   }) : appointments = [...appointments]
-         ..sort((a, b) => a.date.compareTo(b.date));
+         ..sort((a, b) => a.date.compareTo(b.date)),
+       herbAlerts = [...herbAlerts]..sort((a, b) => a.date.compareTo(b.date));
 
   final Customer customer;
 
   /// 날짜 오름차순.
   final List<Appointment> appointments;
 
+  /// 한약 복약 확인 알림. 날짜 오름차순.
+  final List<HerbAlert> herbAlerts;
+
   /// '연락함' 버튼을 마지막으로 누른 시각.
   final DateTime? lastContact;
+
+  // ───────── 한약 복약 ─────────
+
+  /// 아직 확인 안 한 복약 알림 (지난 것 + 앞으로 올 것).
+  List<HerbAlert> get pendingHerbAlerts =>
+      herbAlerts.where((a) => !a.done).toList();
+
+  /// 오늘 연락해야 하는(오늘이거나 지났는데 미확인) 복약 알림.
+  List<HerbAlert> get dueHerbAlerts =>
+      herbAlerts.where((a) => a.isDue).toList();
+
+  bool get needsHerbCheck => customer.isHerbal && dueHerbAlerts.isNotEmpty;
+
+  /// '복약 15일' 같은 표시용 문구.
+  String herbLabel(HerbAlert alert) {
+    final start = customer.herbStart;
+    if (start == null) return '복약 확인';
+    return '복약 ${alert.dayFrom(start)}일';
+  }
 
   /// 가장 최근 '내원' 날짜.
   DateTime? get lastVisit {

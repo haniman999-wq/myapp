@@ -5,6 +5,7 @@ import '../models/customer_overview.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
+import '../widgets/customer_name.dart';
 import '../widgets/status_chip.dart';
 import 'customer_detail_screen.dart';
 import 'customer_form_screen.dart';
@@ -181,14 +182,9 @@ class _CustomerTile extends StatelessWidget {
       title: Row(
         children: [
           Flexible(
-            child: Text(
-              customer.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: needsContact ? kNoShowRed : null,
-              ),
+            child: CustomerName(
+              customer: customer,
+              color: needsContact ? kNoShowRed : null,
             ),
           ),
           if (needsContact) ...[
@@ -198,6 +194,10 @@ class _CustomerTile extends StatelessWidget {
           if (needsCheck) ...[
             const SizedBox(width: 6),
             const StatusChip(label: '내원 확인', color: Colors.orange),
+          ],
+          if (overview.needsHerbCheck) ...[
+            const SizedBox(width: 6),
+            const StatusChip(label: '복약 확인', color: kHerbPurple),
           ],
         ],
       ),

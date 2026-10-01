@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../models/customer_overview.dart';
+import '../models/herb_alert.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
 import '../utils/phone.dart';
+import '../widgets/customer_name.dart';
 import '../widgets/status_chip.dart';
 import 'customer_detail_screen.dart';
+import 'herb_plan_screen.dart';
 
 /// 마지막 일정 후 2주가 지났는데 재예약이 없는 고객 목록.
 class ContactScreen extends StatefulWidget {
@@ -86,7 +89,14 @@ class _ContactScreenState extends State<ContactScreen> {
                 (a, b) => a.contactDueDate!.compareTo(b.contactDueDate!),
               );
 
-          if (due.isEmpty && upcoming.isEmpty) {
+          // 한약 복약 확인: 재예약과 상관없이 알림일이 되면 무조건 표시
+          final herbDue = [
+            for (final o in all)
+              if (o.needsHerbCheck)
+                for (final a in o.dueHerbAlerts) (o, a),
+          ]..sort((x, y) => x.$2.date.compareTo(y.$2.date));
+
+          if (due.isEmpty && upcoming.isEmpty && herbDue.isEmpty) {
             return const Center(
               child: Text(
                 '지금 연락이 필요한 고객이 없어요 🎉',
@@ -98,6 +108,22 @@ class _ContactScreenState extends State<ContactScreen> {
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
+              if (herbDue.isNotEmpty)
+                _Header('🌿 복약 확인 전화 (${herbDue.length}건)', color: kHerbPurple),
+              for (final (o, a) in herbDue)
+                _HerbTile(
+                  overview: o,
+                  alert: a,
+                  onTap: () => _openDetail(o),
+                  onCall: () => callPhone(context, o.customer.phone),
+                  onDone: () => _database.completeHerbAlert(a.id!),
+                  onPostpone: () async {
+                    final days = await showPostponeDialog(context);
+                    if (days != null) {
+                      await _database.postponeHerbPlan(o.customer.id!, days);
+                    }
+                  },
+                ),
               if (due.isNotEmpty) _Header('지금 연락하기 (${due.length}명)'),
               for (final o in due)
                 _ContactTile(
@@ -112,7 +138,7 @@ class _ContactScreenState extends State<ContactScreen> {
                 ListTile(
                   onTap: () => _openDetail(o),
                   leading: const Icon(Icons.schedule, color: Colors.grey),
-                  title: Text(o.customer.name),
+                  title: CustomerName(customer: o.customer),
                   subtitle: Text(
                     '${formatDate(o.contactDueDate)} 부터 연락 · ${o.contactReason}',
                   ),
@@ -126,9 +152,10 @@ class _ContactScreenState extends State<ContactScreen> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header(this.text);
+  const _Header(this.text, {this.color = kPrimaryGreenDark});
 
   final String text;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -136,9 +163,66 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Text(
         text,
-        style: Theme.of(
-          context,
-        ).textTheme.titleSmall?.copyWith(color: kPrimaryGreenDark),
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+/// 복약 확인 전화 한 건.
+class _HerbTile extends StatelessWidget {
+  const _HerbTile({
+    required this.overview,
+    required this.alert,
+    required this.onTap,
+    required this.onCall,
+    required this.onDone,
+    required this.onPostpone,
+  });
+
+  final CustomerOverview overview;
+  final HerbAlert alert;
+  final VoidCallback onTap;
+  final VoidCallback onCall;
+  final VoidCallback onDone;
+  final VoidCallback onPostpone;
+
+  @override
+  Widget build(BuildContext context) {
+    final late = today().difference(alert.date).inDays;
+    return ListTile(
+      onTap: onTap,
+      leading: CircleAvatar(
+        backgroundColor: kHerbPurple.withValues(alpha: 0.12),
+        child: const Text('🌿', style: TextStyle(fontSize: 18)),
+      ),
+      title: CustomerName(customer: overview.customer),
+      subtitle: Text(
+        '${overview.herbLabel(alert)} 확인 · ${formatShortDate(alert.date)}'
+        '${late > 0 ? ' ($late일 지남)' : ''}',
+        style: const TextStyle(color: kHerbPurple, fontWeight: FontWeight.w600),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: onCall,
+            icon: const Icon(Icons.call, color: kPrimaryGreenDark),
+            tooltip: '전화 걸기',
+          ),
+          PopupMenuButton<String>(
+            tooltip: '처리',
+            icon: const Icon(Icons.more_vert),
+            onSelected: (v) => v == 'done' ? onDone() : onPostpone(),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'done', child: Text('확인 완료')),
+              PopupMenuItem(value: 'postpone', child: Text('일정 미루기')),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -177,14 +261,7 @@ class _ContactTile extends StatelessWidget {
         ),
         title: Row(
           children: [
-            Flexible(
-              child: Text(
-                overview.customer.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
+            Flexible(child: CustomerName(customer: overview.customer)),
             if (contacted) ...[
               const SizedBox(width: 8),
               StatusChip(

@@ -17,6 +17,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
+  late final TextEditingController _memoController;
 
   String _gender = '여';
 
@@ -28,6 +29,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     final c = widget.customer;
     _nameController = TextEditingController(text: c?.name ?? '');
     _phoneController = TextEditingController(text: c?.phone ?? '');
+    _memoController = TextEditingController(text: c?.memo ?? '');
     _gender = c?.gender ?? '여';
   }
 
@@ -35,6 +37,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _memoController.dispose();
     super.dispose();
   }
 
@@ -54,6 +57,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
       gender: _gender,
+      memo: _memoController.text.trim(),
     );
 
     await showDialog<void>(
@@ -184,6 +188,19 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
                   onTap: () => setState(() => _gender = '남'),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+            // 특이사항 메모
+            TextFormField(
+              controller: _memoController,
+              decoration: _fieldDecoration(
+                '특이사항 / 메모',
+                hint: '알레르기, 주의사항, 치료 내용 등',
+                icon: const Icon(Icons.sticky_note_2_outlined),
+              ).copyWith(alignLabelWithHint: true),
+              minLines: 3,
+              maxLines: 8,
+              keyboardType: TextInputType.multiline,
             ),
             const SizedBox(height: 28),
             Row(

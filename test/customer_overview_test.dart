@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:idea_vault/models/appointment.dart';
 import 'package:idea_vault/models/customer.dart';
 import 'package:idea_vault/models/customer_overview.dart';
+import 'package:idea_vault/models/herb_alert.dart';
 import 'package:idea_vault/utils/date_format.dart';
 
 CustomerOverview overviewWith(
@@ -83,4 +84,68 @@ void main() {
     expect(before.contactedSinceDue, isFalse);
     expect(after.contactedSinceDue, isTrue);
   });
+
+  group('한약 복약 알림', () {
+    test('알림일 전에는 확인 대상이 아니다', () {
+      final o = herbOverview(startDaysAgo: 10, alerts: [(5, false)]);
+      expect(o.needsHerbCheck, isFalse);
+      expect(o.pendingHerbAlerts, hasLength(1));
+    });
+
+    test('알림일 당일부터 재예약과 상관없이 확인 대상', () {
+      final o = herbOverview(
+        startDaysAgo: 15,
+        alerts: [(0, false), (10, false)],
+      );
+      expect(o.needsHerbCheck, isTrue);
+      expect(o.dueHerbAlerts, hasLength(1));
+      expect(o.herbLabel(o.dueHerbAlerts.first), '복약 15일');
+    });
+
+    test('확인 완료한 알림은 대상에서 빠진다', () {
+      final o = herbOverview(
+        startDaysAgo: 15,
+        alerts: [(0, true), (10, false)],
+      );
+      expect(o.needsHerbCheck, isFalse);
+      expect(o.pendingHerbAlerts, hasLength(1));
+    });
+
+    test('복약 종료(한약 환자 아님)면 알림이 있어도 대상 아님', () {
+      final o = herbOverview(
+        startDaysAgo: 15,
+        alerts: [(0, false)],
+        herbal: false,
+      );
+      expect(o.needsHerbCheck, isFalse);
+    });
+  });
+}
+
+CustomerOverview herbOverview({
+  required int startDaysAgo,
+  required List<(int daysFromToday, bool done)> alerts,
+  bool herbal = true,
+}) {
+  final now = today();
+  return CustomerOverview(
+    customer: Customer(
+      id: 2,
+      name: '김한약',
+      phone: '010-1111-2222',
+      gender: '여',
+      herbStart: herbal ? now.subtract(Duration(days: startDaysAgo)) : null,
+      createdAt: now,
+    ),
+    appointments: const [],
+    herbAlerts: [
+      for (final (i, (days, done)) in alerts.indexed)
+        HerbAlert(
+          id: i + 1,
+          customerId: 2,
+          date: now.add(Duration(days: days)),
+          done: done,
+        ),
+    ],
+  );
 }

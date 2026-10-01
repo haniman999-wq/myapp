@@ -29,3 +29,7 @@ String toDbDate(DateTime d) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${d.year}-${two(d.month)}-${two(d.day)}';
 }
+
+/// 같은 날짜인지 (시각 무시).
+bool isSameDate(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;

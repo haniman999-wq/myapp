@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 import '../models/appointment.dart';
 import '../models/customer.dart';
 import '../models/customer_overview.dart';
+import '../models/herb_alert.dart';
 import '../utils/date_format.dart';
 
 class CustomerDatabase {
@@ -32,7 +33,7 @@ class CustomerDatabase {
     final path = join(databasesPath, 'my_customers.db');
     return openDatabase(
       path,
-      version: 2,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE customers (
@@ -40,14 +41,42 @@ class CustomerDatabase {
             name TEXT NOT NULL,
             phone TEXT NOT NULL,
             gender TEXT NOT NULL,
+            memo TEXT NOT NULL DEFAULT '',
+            herbStart TEXT,
             createdAt TEXT NOT NULL
           )
         ''');
         await _createScheduleTables(db);
+        await _createHerbTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) await _migrateToV2(db);
+        if (oldVersion < 3) {
+          // ver.3: 고객 특이사항 메모
+          await db.execute(
+            "ALTER TABLE customers ADD COLUMN memo TEXT NOT NULL DEFAULT ''",
+          );
+        }
+        if (oldVersion < 4) {
+          // ver.4: 한약 복약 시작일 + 복약 확인 알림
+          await db.execute('ALTER TABLE customers ADD COLUMN herbStart TEXT');
+          await _createHerbTable(db);
+        }
       },
+    );
+  }
+
+  Future<void> _createHerbTable(DatabaseExecutor db) async {
+    await db.execute('''
+      CREATE TABLE herb_alerts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customerId INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        done INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_herb_alerts_customer ON herb_alerts(customerId)',
     );
   }
 
@@ -148,6 +177,7 @@ class CustomerDatabase {
         where: 'customerId = ?',
         whereArgs: [id],
       );
+      await txn.delete('herb_alerts', where: 'customerId = ?', whereArgs: [id]);
       await txn.delete('customers', where: 'id = ?', whereArgs: [id]);
     });
     notifyChanged();
@@ -158,6 +188,7 @@ class CustomerDatabase {
     await db.transaction((txn) async {
       await txn.delete('appointments');
       await txn.delete('contact_logs');
+      await txn.delete('herb_alerts');
       await txn.delete('customers');
     });
     notifyChanged();
@@ -197,13 +228,118 @@ class CustomerDatabase {
     notifyChanged();
   }
 
+  // ───────── 한약 복약 ─────────
+
+  /// 복약 시작일과 앞으로의 확인 알림 날짜를 한꺼번에 저장합니다.
+  /// 이미 '확인 완료'한 알림은 기록으로 남기고, 미완료 알림만 [dates] 로 교체합니다.
+  Future<void> saveHerbPlan({
+    required int customerId,
+    required DateTime start,
+    required List<DateTime> dates,
+  }) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.update(
+        'customers',
+        {'herbStart': toDbDate(start)},
+        where: 'id = ?',
+        whereArgs: [customerId],
+      );
+      await txn.delete(
+        'herb_alerts',
+        where: 'customerId = ? AND done = 0',
+        whereArgs: [customerId],
+      );
+      for (final d in dates.toSet()) {
+        await txn.insert('herb_alerts', {
+          'customerId': customerId,
+          'date': toDbDate(d),
+          'done': 0,
+        });
+      }
+    });
+    notifyChanged();
+  }
+
+  /// 복약이 밀렸을 때: 복약 시작일과 미완료 알림을 모두 [days]일 뒤로 미룹니다.
+  Future<void> postponeHerbPlan(int customerId, int days) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        'customers',
+        columns: ['herbStart'],
+        where: 'id = ?',
+        whereArgs: [customerId],
+      );
+      final start = rows.isEmpty ? null : rows.first['herbStart'] as String?;
+      if (start == null) return;
+      await txn.update(
+        'customers',
+        {
+          'herbStart': toDbDate(
+            DateTime.parse(start).add(Duration(days: days)),
+          ),
+        },
+        where: 'id = ?',
+        whereArgs: [customerId],
+      );
+      final alerts = await txn.query(
+        'herb_alerts',
+        where: 'customerId = ? AND done = 0',
+        whereArgs: [customerId],
+      );
+      for (final row in alerts) {
+        final a = HerbAlert.fromMap(row);
+        await txn.update(
+          'herb_alerts',
+          {'date': toDbDate(a.date.add(Duration(days: days)))},
+          where: 'id = ?',
+          whereArgs: [a.id],
+        );
+      }
+    });
+    notifyChanged();
+  }
+
+  /// 복약 확인 전화를 마쳤을 때.
+  Future<void> completeHerbAlert(int alertId) async {
+    final db = await database;
+    await db.update(
+      'herb_alerts',
+      {'done': 1},
+      where: 'id = ?',
+      whereArgs: [alertId],
+    );
+    notifyChanged();
+  }
+
+  /// 복약 종료: 한약 표시를 끄고 남은 알림을 지웁니다. (완료 기록은 남김)
+  Future<void> endHerbPlan(int customerId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.update(
+        'customers',
+        {'herbStart': null},
+        where: 'id = ?',
+        whereArgs: [customerId],
+      );
+      await txn.delete(
+        'herb_alerts',
+        where: 'customerId = ? AND done = 0',
+        whereArgs: [customerId],
+      );
+    });
+    notifyChanged();
+  }
+
   // ───────── 화면용 묶음 조회 ─────────
 
-  /// 모든 고객 + 예약 기록 + 마지막 연락일을 한 번에 불러옵니다.
+  /// 모든 고객 + 예약 기록 + 복약 알림 + 마지막 연락일을 한 번에 불러옵니다.
   Future<List<CustomerOverview>> getOverviews() async {
     final db = await database;
     final customers = await getAllCustomers();
     final apptRows = await db.query('appointments', orderBy: 'date ASC');
+    final herbRows = await db.query('herb_alerts', orderBy: 'date ASC');
     final contactRows = await db.rawQuery(
       'SELECT customerId, MAX(contactedAt) AS last FROM contact_logs '
       'GROUP BY customerId',
@@ -213,6 +349,11 @@ class CustomerDatabase {
     for (final row in apptRows) {
       final a = Appointment.fromMap(row);
       apptsByCustomer.putIfAbsent(a.customerId, () => []).add(a);
+    }
+    final herbByCustomer = <int, List<HerbAlert>>{};
+    for (final row in herbRows) {
+      final a = HerbAlert.fromMap(row);
+      herbByCustomer.putIfAbsent(a.customerId, () => []).add(a);
     }
     final lastContact = {
       for (final row in contactRows)
@@ -224,6 +365,7 @@ class CustomerDatabase {
         CustomerOverview(
           customer: c,
           appointments: apptsByCustomer[c.id] ?? const [],
+          herbAlerts: herbByCustomer[c.id] ?? const [],
           lastContact: lastContact[c.id],
         ),
     ];

@@ -19,7 +19,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   final _database = CustomerDatabase.instance;
   int _selectedIndex = 0;
 
-  /// '연락' 탭 배지에 보여줄, 아직 연락 안 한 고객 수.
+  /// '연락' 탭 배지에 보여줄 고객 수 (재방문 미연락 + 복약 확인 필요).
   int _contactCount = 0;
 
   @override
@@ -46,7 +46,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Future<void> _reloadCount() async {
     final overviews = await _database.getOverviews();
     final count = overviews
-        .where((o) => o.needsContact && !o.contactedSinceDue)
+        .where(
+          (o) => (o.needsContact && !o.contactedSinceDue) || o.needsHerbCheck,
+        )
         .length;
     if (mounted) setState(() => _contactCount = count);
   }
@@ -60,8 +62,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final screens = <Widget>[
-      const HomeScreen(),
       const CalendarScreen(),
+      const HomeScreen(),
       const ContactScreen(),
       const SearchScreen(),
       const SettingsScreen(),
@@ -76,11 +78,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         selectedItemColor: kPrimaryGreenDark,
         unselectedItemColor: Colors.grey,
         items: [
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
           const BottomNavigationBarItem(
             icon: Icon(Icons.calendar_month),
             label: '달력',
           ),
+          const BottomNavigationBarItem(icon: Icon(Icons.people), label: '고객'),
           BottomNavigationBarItem(
             icon: Badge(
               isLabelVisible: _contactCount > 0,

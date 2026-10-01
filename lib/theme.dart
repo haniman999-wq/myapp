@@ -10,3 +10,6 @@ const Color kPrimaryGreenDark = Color(0xFF009624);
 
 /// 예약일에 오지 않은 고객(노쇼)을 강조하는 색 — 완성본에서 사용 예정
 const Color kNoShowRed = Color(0xFFE53935);
+
+/// 한약 복용 환자 표시 색 (이름·배지). 다른 상태색(초록·빨강·주황·파랑)과 겹치지 않는 보라.
+const Color kHerbPurple = Color(0xFF7B1FA2);

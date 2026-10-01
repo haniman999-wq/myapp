@@ -4,6 +4,7 @@ import '../models/customer_overview.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
+import '../widgets/customer_name.dart';
 import 'customer_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -44,6 +45,7 @@ class _SearchScreenState extends State<SearchScreen> {
         .where(
           (c) =>
               c.customer.name.toLowerCase().contains(query) ||
+              c.customer.memo.toLowerCase().contains(query) ||
               c.customer.phone
                   .replaceAll('-', '')
                   .contains(query.replaceAll('-', '')),
@@ -80,7 +82,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: '고객명 또는 전화번호 검색',
+                hintText: '고객명, 전화번호, 메모 검색',
                 prefixIcon: const Icon(Icons.search),
                 border: const OutlineInputBorder(),
                 focusedBorder: const OutlineInputBorder(
@@ -117,12 +119,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     final customer = overview.customer;
                     return ListTile(
                       leading: const Icon(Icons.person_outline),
-                      title: Text(
-                        customer.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      title: CustomerName(customer: customer),
                       subtitle: Text(
                         '${customer.phone}  ·  최종내원 ${formatDate(overview.lastVisit)}',
                       ),

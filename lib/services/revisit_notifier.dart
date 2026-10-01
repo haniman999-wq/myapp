@@ -17,6 +17,9 @@ class RevisitNotifier {
 
   static const _notifyHour = 9;
 
+  /// 복약 알림 id 는 고객 id(재방문 알림)와 겹치지 않게 이 값을 더해 씁니다.
+  static const _herbIdBase = 1000000;
+
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
   bool _syncing = false;
@@ -78,18 +81,40 @@ class RevisitNotifier {
     final now = tz.TZDateTime.now(tz.local);
     final overviews = await CustomerDatabase.instance.getOverviews();
 
+    tz.TZDateTime at(DateTime d) =>
+        tz.TZDateTime(tz.local, d.year, d.month, d.day, _notifyHour);
+
     for (final o in overviews) {
+      // 한약 복약 확인: 재예약과 상관없이 정해둔 날마다 무조건 알림
+      if (o.customer.isHerbal) {
+        for (final alert in o.pendingHerbAlerts) {
+          final when = at(alert.date);
+          final alertId = alert.id;
+          if (alertId == null || !when.isAfter(now)) continue;
+          await _plugin.zonedSchedule(
+            id: _herbIdBase + alertId,
+            scheduledDate: when,
+            title: '🌿 ${o.herbLabel(alert)} 복약 확인',
+            body: '${o.customer.name} 고객에게 복약 확인 전화를 해주세요.',
+            notificationDetails: const NotificationDetails(
+              android: AndroidNotificationDetails(
+                'herb',
+                '한약 복약 알림',
+                channelDescription: '한약 복약 시작 후 정해둔 날의 확인 전화 알림',
+                importance: Importance.high,
+                priority: Priority.high,
+              ),
+            ),
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          );
+        }
+      }
+
       final due = o.contactDueDate;
       final id = o.customer.id;
       if (due == null || id == null) continue;
 
-      final when = tz.TZDateTime(
-        tz.local,
-        due.year,
-        due.month,
-        due.day,
-        _notifyHour,
-      );
+      final when = at(due);
       // 이미 지난 건은 앱 안 '연락 필요' 탭에서 보여줍니다.
       if (!when.isAfter(now)) continue;
 
