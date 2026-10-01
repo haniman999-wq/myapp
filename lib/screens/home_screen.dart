@@ -166,7 +166,8 @@ class _CustomerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final customer = overview.customer;
     final isFemale = customer.gender == '여';
-    final needsContact = overview.needsContact;
+    // 이미 연락함 표시했으면 빨간 표시는 끕니다.
+    final needsContact = overview.revisitPending;
     final needsCheck = overview.uncheckedBookings.isNotEmpty;
     final next = overview.nextBooking;
 
@@ -203,6 +204,10 @@ class _CustomerTile extends StatelessWidget {
             const Blink(
               child: StatusChip(label: '복약 확인', color: kHerbPurple),
             ),
+          ],
+          if (overview.hasMissed) ...[
+            const SizedBox(width: 6),
+            const StatusChip(label: '놓친 연락', color: kMissedBrown),
           ],
         ],
       ),

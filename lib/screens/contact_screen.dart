@@ -11,6 +11,7 @@ import '../widgets/customer_name.dart';
 import '../widgets/status_chip.dart';
 import 'customer_detail_screen.dart';
 import 'herb_plan_screen.dart';
+import 'missed_screen.dart';
 
 /// 마지막 일정 후 2주가 지났는데 재예약이 없는 환자 목록.
 class ContactScreen extends StatefulWidget {
@@ -71,7 +72,7 @@ class _ContactScreenState extends State<ContactScreen> {
           final all = snapshot.data ?? [];
 
           // 아직 연락 안 한 환자 먼저, 그 안에서는 오래된 순.
-          final due = all.where((o) => o.needsContact).toList()
+          final due = all.where((o) => o.revisitActive).toList()
             ..sort((a, b) {
               if (a.contactedSinceDue != b.contactedSinceDue) {
                 return a.contactedSinceDue ? 1 : -1;
@@ -94,10 +95,16 @@ class _ContactScreenState extends State<ContactScreen> {
           final herbDue = [
             for (final o in all)
               if (o.needsHerbCheck)
-                for (final a in o.dueHerbAlerts) (o, a),
+                for (final a in o.activeHerbAlerts) (o, a),
           ]..sort((x, y) => x.$2.date.compareTo(y.$2.date));
 
-          if (due.isEmpty && upcoming.isEmpty && herbDue.isEmpty) {
+          // 7일(kMaxReminderDays) 동안 알렸는데도 연락 못 한 환자 → 놓친 연락 보관함
+          final missed = all.where((o) => o.hasMissed).toList();
+
+          if (due.isEmpty &&
+              upcoming.isEmpty &&
+              herbDue.isEmpty &&
+              missed.isEmpty) {
             return const Center(
               child: Text(
                 '지금 연락이 필요한 환자가 없어요 🎉',
@@ -109,6 +116,13 @@ class _ContactScreenState extends State<ContactScreen> {
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
+              if (missed.isNotEmpty)
+                _MissedFolderTile(
+                  count: missed.length,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const MissedScreen()),
+                  ),
+                ),
               if (herbDue.isNotEmpty)
                 _Header('🌿 복약 확인 전화 (${herbDue.length}건)', color: kHerbPurple),
               for (final (o, a) in herbDue)
@@ -205,7 +219,7 @@ class _HerbTile extends StatelessWidget {
       title: CustomerName(customer: overview.customer),
       subtitle: Text(
         '${overview.herbLabel(alert)} 확인 · ${formatShortDate(alert.date)}'
-        '${late > 0 ? ' ($late일 지남)' : ''}',
+        ' · ${late + 1}/$kMaxReminderDays일째 알림',
         style: const TextStyle(color: kHerbPurple, fontWeight: FontWeight.w600),
       ),
       trailing: Row(
@@ -277,7 +291,12 @@ class _ContactTile extends StatelessWidget {
             ],
           ],
         ),
-        subtitle: Text(overview.contactReason),
+        subtitle: Text(
+          overview.contactReason +
+              (contacted
+                  ? ''
+                  : ' · ${(overview.revisitOverdueDays ?? 0) + 1}/$kMaxReminderDays일째 알림'),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -293,6 +312,35 @@ class _ContactTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 연락 탭 맨 위 '놓친 연락' 보관함 입구.
+class _MissedFolderTile extends StatelessWidget {
+  const _MissedFolderTile({required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      color: kMissedBrown.withValues(alpha: 0.1),
+      child: ListTile(
+        onTap: onTap,
+        leading: const Icon(Icons.folder_special, color: kMissedBrown),
+        title: Text(
+          '놓친 연락 $count명',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: kMissedBrown,
+          ),
+        ),
+        subtitle: const Text('$kMaxReminderDays일 동안 알렸는데도 연락하지 못한 환자'),
+        trailing: const Icon(Icons.chevron_right),
       ),
     );
   }

@@ -59,9 +59,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Future<void> _reloadCount() async {
     final overviews = await _database.getOverviews();
     final count = overviews
-        .where(
-          (o) => (o.needsContact && !o.contactedSinceDue) || o.needsHerbCheck,
-        )
+        .where((o) => o.revisitPending || o.needsHerbCheck)
         .length;
     if (mounted) setState(() => _contactCount = count);
   }

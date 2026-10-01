@@ -146,6 +146,46 @@ void main() {
       expect(DailySummary.of([herb, rebooked], today()).isEmpty, isTrue);
     });
   });
+
+  group('7일 반복 알림 · 놓친 연락', () {
+    test('복약 알림: 7일째까지는 연락 대상, 8일째부터 놓친 연락', () {
+      final day7 = herbOverview(startDaysAgo: 21, alerts: [(-6, false)]);
+      expect(day7.needsHerbCheck, isTrue);
+      expect(day7.hasMissed, isFalse);
+
+      final day8 = herbOverview(startDaysAgo: 22, alerts: [(-7, false)]);
+      expect(day8.needsHerbCheck, isFalse);
+      expect(day8.missedHerbAlerts, hasLength(1));
+      expect(day8.hasMissed, isTrue);
+    });
+
+    test('재방문: 기한 후 7일째까지 연락 대상, 그 뒤 놓친 연락', () {
+      // 마지막 내원 20일 전 → 기한 6일 전 → 7일째
+      final active = overviewWith([(-20, visited)]);
+      expect(active.revisitPending, isTrue);
+      expect(active.revisitMissed, isFalse);
+
+      // 마지막 내원 21일 전 → 기한 7일 전 → 놓친 연락
+      final missed = overviewWith([(-21, visited)]);
+      expect(missed.revisitPending, isFalse);
+      expect(missed.revisitMissed, isTrue);
+    });
+
+    test('연락함을 누른 환자는 놓친 연락이 되지 않는다', () {
+      final o = overviewWith([(-30, visited)], lastContact: DateTime.now());
+      expect(o.revisitMissed, isFalse);
+      expect(o.hasMissed, isFalse);
+    });
+
+    test('요약 알림: 이름 뒤에 며칠째인지, 7일 지나면 빠짐', () {
+      final herb = herbOverview(startDaysAgo: 17, alerts: [(-2, false)]);
+      final s = DailySummary.of([herb], today());
+      expect(s.body, contains('김한약(3일째)'));
+
+      final old = herbOverview(startDaysAgo: 22, alerts: [(-7, false)]);
+      expect(DailySummary.of([old], today()).isEmpty, isTrue);
+    });
+  });
 }
 
 CustomerOverview herbOverview({

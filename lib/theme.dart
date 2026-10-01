@@ -13,3 +13,6 @@ const Color kNoShowRed = Color(0xFFE53935);
 
 /// 한약 복용 환자 표시 색 (이름·배지). 다른 상태색(초록·빨강·주황·파랑)과 겹치지 않는 보라.
 const Color kHerbPurple = Color(0xFF7B1FA2);
+
+/// 7일 동안 알렸는데도 연락 못 한 '놓친 연락' 표시 색.
+const Color kMissedBrown = Color(0xFF8D6E63);

@@ -14,6 +14,7 @@ import '../widgets/customer_name.dart';
 import '../widgets/appointment_sheet.dart';
 import '../widgets/status_chip.dart';
 import 'customer_detail_screen.dart';
+import 'help_screen.dart';
 
 /// 달력에 표시할 일정 한 칸.
 class _Entry {
@@ -170,6 +171,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
         foregroundColor: Colors.white,
         title: const Text('예약 달력'),
         actions: [
+          IconButton(
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const HelpScreen())),
+            icon: const Icon(Icons.help_outline),
+            tooltip: '앱 사용법',
+          ),
           TextButton.icon(
             onPressed: _goToday,
             style: TextButton.styleFrom(foregroundColor: Colors.white),

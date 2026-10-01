@@ -6,6 +6,7 @@ import '../services/customer_database.dart';
 import '../services/revisit_notifier.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
+import 'help_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -193,6 +194,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const SizedBox(height: 20),
+          Card(
+            color: kPrimaryGreen.withValues(alpha: 0.1),
+            child: ListTile(
+              leading: const Icon(Icons.menu_book, color: kPrimaryGreenDark),
+              title: const Text(
+                '앱 사용법',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text('모든 기능과 사용 방법을 자세히 볼 수 있어요'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const HelpScreen())),
+            ),
+          ),
+          const SizedBox(height: 12),
           _BackupCard(
             lastBackupFuture: _lastBackupFuture,
             busy: _busy,

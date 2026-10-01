@@ -4,6 +4,7 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../models/customer_overview.dart';
+import '../theme.dart';
 import '../utils/date_format.dart';
 import 'app_navigation.dart';
 import 'customer_database.dart';
@@ -45,7 +46,7 @@ class RevisitNotifier {
       tz_data.initializeTimeZones();
       await _plugin.initialize(
         settings: const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          android: AndroidInitializationSettings('ic_stat_notify'),
         ),
         // 앱이 켜져 있을 때 알림을 누르면
         onDidReceiveNotificationResponse: (_) => openContactTab(),
@@ -144,6 +145,7 @@ class RevisitNotifier {
             '오늘의 연락 요약',
             channelDescription: '매일 아침, 오늘 연락할 환자(복약 확인·재방문)를 모아서 알려줍니다',
             importance: Importance.high,
+            color: kPrimaryGreenDark,
             priority: Priority.high,
             // 잠금화면에서는 환자 이름을 가립니다.
             visibility: NotificationVisibility.private,
@@ -162,14 +164,20 @@ class DailySummary {
 
   /// [day] 아침 기준, 지금 데이터대로라면 연락해야 할 환자들.
   factory DailySummary.of(List<CustomerOverview> overviews, DateTime day) {
+    // 이름 뒤에 며칠째 알림인지 붙입니다. (첫날은 이름만)
+    String label(String name, int nth) => nth > 1 ? '$name($nth일째)' : name;
+
     final herb = <String>[];
     final revisit = <String>[];
     for (final o in overviews) {
-      final h = o.herbCheckDueOn(day);
-      final r = o.revisitDueOn(day);
-      if (h) herb.add(o.customer.name);
-      // 둘 다 해당하면 복약 확인 쪽으로 한 번만 셉니다.
-      if (r && !h) revisit.add(o.customer.name);
+      final h = o.herbReminderDayOn(day);
+      final r = o.revisitReminderDayOn(day);
+      if (h != null) {
+        herb.add(label(o.customer.name, h));
+      } else if (r != null) {
+        // 둘 다 해당하면 복약 확인 쪽으로 한 번만 셉니다.
+        revisit.add(label(o.customer.name, r));
+      }
     }
     return DailySummary._(herb, revisit);
   }

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 알림 아이콘은 코드에서 이름(문자열)으로만 불러서, 릴리스 빌드가 지우지 않도록 붙잡아 둡니다. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_notify" />
