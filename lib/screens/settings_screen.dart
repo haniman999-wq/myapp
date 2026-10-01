@@ -34,7 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('전체 삭제'),
-        content: const Text('모든 고객 정보를 지울까요?\n삭제하면 되돌릴 수 없습니다.'),
+        content: const Text('모든 환자 정보를 지울까요?\n삭제하면 되돌릴 수 없습니다.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -70,7 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               const SizedBox(height: 16),
               const Text(
-                '내 고객의 모든 것',
+                '내 환자의 모든 것',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -79,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                '초진일부터 재진일까지, 고객 치료 스케쥴 관리',
+                '초진일부터 재진일까지, 환자 치료 스케쥴 관리',
                 style: TextStyle(fontSize: 13, color: Colors.grey),
                 textAlign: TextAlign.center,
               ),
@@ -89,7 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 builder: (context, snapshot) {
                   final count = snapshot.data;
                   return Text(
-                    count == null ? '불러오는 중...' : '등록된 고객: $count명',
+                    count == null ? '불러오는 중...' : '등록된 환자: $count명',
                     style: const TextStyle(fontSize: 16),
                   );
                 },

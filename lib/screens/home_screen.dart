@@ -40,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  /// 새 고객을 등록하고 바로 상세 화면으로 이동해 첫 일정을 넣게 합니다.
+  /// 새 환자를 등록하고 바로 상세 화면으로 이동해 첫 일정을 넣게 합니다.
   Future<void> _addCustomer() async {
     final result = await Navigator.of(context).push<Customer>(
       MaterialPageRoute(builder: (_) => const CustomerFormScreen()),
@@ -63,8 +63,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('고객 삭제'),
-        content: Text('"${customer.name}" 고객을 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.'),
+        title: const Text('환자 삭제'),
+        content: Text('"${customer.name}" 환자를 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -90,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: kPrimaryGreen,
         foregroundColor: Colors.white,
-        title: const Text('내 고객의 모든 것'),
+        title: const Text('내 환자의 모든 것'),
       ),
       body: FutureBuilder<List<CustomerOverview>>(
         future: _overviewsFuture,
@@ -144,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: Colors.white,
         onPressed: _addCustomer,
         icon: const Icon(Icons.person_add),
-        label: const Text('고객 추가'),
+        label: const Text('환자 추가'),
       ),
     );
   }
@@ -230,13 +230,13 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '아직 등록된 고객이 없어요.',
+              '아직 등록된 환자가 없어요.',
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              '오른쪽 아래 + 버튼을 눌러 첫 고객을 등록해보세요.',
+              '오른쪽 아래 + 버튼을 눌러 첫 환자를 등록해보세요.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.outline,
               ),

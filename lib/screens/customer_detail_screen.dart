@@ -14,7 +14,7 @@ import '../widgets/status_chip.dart';
 import 'customer_form_screen.dart';
 import 'herb_plan_screen.dart';
 
-/// 고객 한 명의 정보와 예약·내원 기록.
+/// 환자 한 명의 정보와 예약·내원 기록.
 class CustomerDetailScreen extends StatefulWidget {
   const CustomerDetailScreen({super.key, required this.customerId});
 
@@ -58,9 +58,9 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('고객 삭제'),
+        title: const Text('환자 삭제'),
         content: Text(
-          '"${customer.name}" 고객과 모든 예약 기록을 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.',
+          '"${customer.name}" 환자와 모든 예약 기록을 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.',
         ),
         actions: [
           TextButton(
@@ -84,7 +84,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('${customer.name} 고객 연락 기록을 남겼어요')));
+    ).showSnackBar(SnackBar(content: Text('${customer.name} 환자 연락 기록을 남겼어요')));
   }
 
   void _openHerbPlan(CustomerOverview overview) {
@@ -113,7 +113,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('복약 종료'),
-        content: Text('${customer.name} 고객의 한약 복약을 종료할까요?\n남은 복약 알림이 모두 취소돼요.'),
+        content: Text('${customer.name} 환자의 한약 복약을 종료할까요?\n남은 복약 알림이 모두 취소돼요.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -151,7 +151,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               foregroundColor: Colors.white,
             ),
             body: snapshot.connectionState == ConnectionState.done
-                ? const Center(child: Text('고객 정보를 찾을 수 없어요'))
+                ? const Center(child: Text('환자 정보를 찾을 수 없어요'))
                 : const Center(child: CircularProgressIndicator()),
           );
         }
@@ -183,7 +183,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               IconButton(
                 onPressed: () => _delete(customer),
                 icon: const Icon(Icons.delete_outline),
-                tooltip: '고객 삭제',
+                tooltip: '환자 삭제',
               ),
             ],
           ),

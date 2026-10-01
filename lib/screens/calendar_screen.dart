@@ -430,7 +430,7 @@ class _DayCell extends StatelessWidget {
   }
 }
 
-/// 선택한 날의 예약자 한 줄. 누르면 고객 상세, 오른쪽 상태 배지를 누르면 상태 변경.
+/// 선택한 날의 예약자 한 줄. 누르면 환자 상세, 오른쪽 상태 배지를 누르면 상태 변경.
 class _EntryTile extends StatelessWidget {
   const _EntryTile({
     required this.entry,
@@ -482,7 +482,7 @@ class _EntryTile extends StatelessWidget {
   }
 }
 
-/// 예약을 넣을 고객 고르기.
+/// 예약을 넣을 환자 고르기.
 class _CustomerPickerDialog extends StatefulWidget {
   const _CustomerPickerDialog({required this.customers});
 
@@ -507,7 +507,7 @@ class _CustomerPickerDialogState extends State<_CustomerPickerDialog> {
         .toList();
 
     return AlertDialog(
-      title: const Text('고객 선택'),
+      title: const Text('환자 선택'),
       contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       content: SizedBox(
         width: double.maxFinite,

@@ -73,7 +73,7 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppBar(
         backgroundColor: kPrimaryGreen,
         foregroundColor: Colors.white,
-        title: const Text('고객 검색'),
+        title: const Text('환자 검색'),
       ),
       body: Column(
         children: [
@@ -82,7 +82,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: '고객명, 전화번호, 메모 검색',
+                hintText: '환자명, 전화번호, 메모 검색',
                 prefixIcon: const Icon(Icons.search),
                 border: const OutlineInputBorder(),
                 focusedBorder: const OutlineInputBorder(
@@ -100,14 +100,14 @@ class _SearchScreenState extends State<SearchScreen> {
                 }
 
                 if (_query.isEmpty) {
-                  return const Center(child: Text('찾고 싶은 고객을 검색해보세요 🔍'));
+                  return const Center(child: Text('찾고 싶은 환자를 검색해보세요 🔍'));
                 }
 
                 final customers = snapshot.data ?? [];
                 final filtered = _filter(customers);
 
                 if (filtered.isEmpty) {
-                  return const Center(child: Text('찾는 고객이 없어요'));
+                  return const Center(child: Text('찾는 환자가 없어요'));
                 }
 
                 return ListView.separated(

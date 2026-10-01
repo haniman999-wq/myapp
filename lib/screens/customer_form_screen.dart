@@ -120,7 +120,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
       appBar: AppBar(
         backgroundColor: kPrimaryGreen,
         foregroundColor: Colors.white,
-        title: Text(_isEditing ? '고객 정보 수정' : '새 고객 등록'),
+        title: Text(_isEditing ? '환자 정보 수정' : '새 환자 등록'),
         actions: [
           IconButton(
             onPressed: _submit,
@@ -134,17 +134,17 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // 고객명
+            // 환자명
             TextFormField(
               controller: _nameController,
               decoration: _fieldDecoration(
-                '고객명',
+                '환자명',
                 icon: const Icon(Icons.person_outline),
               ),
               textInputAction: TextInputAction.next,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return '고객명을 입력해주세요';
+                  return '환자명을 입력해주세요';
                 }
                 return null;
               },

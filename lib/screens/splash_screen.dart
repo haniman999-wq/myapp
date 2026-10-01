@@ -96,7 +96,7 @@ class _SplashScreenState extends State<SplashScreen>
                       alignment: Alignment.center,
                       padding: const EdgeInsets.all(24),
                       child: const Text(
-                        '내 고객의\n모든 것',
+                        '내 환자의\n모든 것',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,

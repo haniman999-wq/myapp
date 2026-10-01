@@ -19,7 +19,7 @@ enum AppointmentStatus {
       values.firstWhere((s) => s.dbValue == value, orElse: () => booked);
 }
 
-/// 고객의 예약/내원 기록 한 건. 날짜 단위로만 관리합니다.
+/// 환자의 예약/내원 기록 한 건. 날짜 단위로만 관리합니다.
 class Appointment {
   final int? id;
   final int customerId;

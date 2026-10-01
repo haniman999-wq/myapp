@@ -1,12 +1,12 @@
 import '../utils/date_format.dart';
 
-/// 고객 한 명의 기본 정보.
+/// 환자 한 명의 기본 정보.
 ///
 /// 내원·예약 일정은 [Appointment] 로 따로 저장하고,
 /// 마지막 내원일·다음 예약일은 [CustomerOverview] 에서 계산합니다.
 class Customer {
   final int? id;
-  final String name; // 고객명
+  final String name; // 환자명
   final String phone; // 전화번호
   final String gender; // 성별 ('남' | '여')
   final String memo; // 특이사항 메모

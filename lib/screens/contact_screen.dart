@@ -11,7 +11,7 @@ import '../widgets/status_chip.dart';
 import 'customer_detail_screen.dart';
 import 'herb_plan_screen.dart';
 
-/// 마지막 일정 후 2주가 지났는데 재예약이 없는 고객 목록.
+/// 마지막 일정 후 2주가 지났는데 재예약이 없는 환자 목록.
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
 
@@ -23,7 +23,7 @@ class _ContactScreenState extends State<ContactScreen> {
   final _database = CustomerDatabase.instance;
   late Future<List<CustomerOverview>> _future;
 
-  /// 이 기간 안에 연락 기한이 오는 고객은 '곧 연락' 으로 미리 보여줍니다.
+  /// 이 기간 안에 연락 기한이 오는 환자는 '곧 연락' 으로 미리 보여줍니다.
   static const _upcomingDays = 3;
 
   @override
@@ -69,7 +69,7 @@ class _ContactScreenState extends State<ContactScreen> {
           }
           final all = snapshot.data ?? [];
 
-          // 아직 연락 안 한 고객 먼저, 그 안에서는 오래된 순.
+          // 아직 연락 안 한 환자 먼저, 그 안에서는 오래된 순.
           final due = all.where((o) => o.needsContact).toList()
             ..sort((a, b) {
               if (a.contactedSinceDue != b.contactedSinceDue) {
@@ -99,7 +99,7 @@ class _ContactScreenState extends State<ContactScreen> {
           if (due.isEmpty && upcoming.isEmpty && herbDue.isEmpty) {
             return const Center(
               child: Text(
-                '지금 연락이 필요한 고객이 없어요 🎉',
+                '지금 연락이 필요한 환자가 없어요 🎉',
                 style: TextStyle(fontSize: 16),
               ),
             );

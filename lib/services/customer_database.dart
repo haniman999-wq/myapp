@@ -52,7 +52,7 @@ class CustomerDatabase {
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) await _migrateToV2(db);
         if (oldVersion < 3) {
-          // ver.3: 고객 특이사항 메모
+          // ver.3: 환자 특이사항 메모
           await db.execute(
             "ALTER TABLE customers ADD COLUMN memo TEXT NOT NULL DEFAULT ''",
           );
@@ -104,7 +104,7 @@ class CustomerDatabase {
     ''');
   }
 
-  /// ver.1 의 고객별 최초내원일/최종내원일/예약일 칸을 예약 기록으로 옮깁니다.
+  /// ver.1 의 환자별 최초내원일/최종내원일/예약일 칸을 예약 기록으로 옮깁니다.
   /// (예전 칸은 SQLite 특성상 남겨두지만 더 이상 쓰지 않습니다.)
   Future<void> _migrateToV2(Database db) async {
     await db.transaction((txn) async {
@@ -135,7 +135,7 @@ class CustomerDatabase {
     });
   }
 
-  // ───────── 고객 ─────────
+  // ───────── 환자 ─────────
 
   Future<List<Customer>> getAllCustomers() async {
     final db = await database;
@@ -334,7 +334,7 @@ class CustomerDatabase {
 
   // ───────── 화면용 묶음 조회 ─────────
 
-  /// 모든 고객 + 예약 기록 + 복약 알림 + 마지막 연락일을 한 번에 불러옵니다.
+  /// 모든 환자 + 예약 기록 + 복약 알림 + 마지막 연락일을 한 번에 불러옵니다.
   Future<List<CustomerOverview>> getOverviews() async {
     final db = await database;
     final customers = await getAllCustomers();

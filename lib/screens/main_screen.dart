@@ -19,7 +19,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   final _database = CustomerDatabase.instance;
   int _selectedIndex = 0;
 
-  /// '연락' 탭 배지에 보여줄 고객 수 (재방문 미연락 + 복약 확인 필요).
+  /// '연락' 탭 배지에 보여줄 환자 수 (재방문 미연락 + 복약 확인 필요).
   int _contactCount = 0;
 
   @override
@@ -82,7 +82,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             icon: Icon(Icons.calendar_month),
             label: '달력',
           ),
-          const BottomNavigationBarItem(icon: Icon(Icons.people), label: '고객'),
+          const BottomNavigationBarItem(icon: Icon(Icons.people), label: '환자'),
           BottomNavigationBarItem(
             icon: Badge(
               isLabelVisible: _contactCount > 0,

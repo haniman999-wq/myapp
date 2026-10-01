@@ -30,7 +30,7 @@ class MyCustomersApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '내 고객의 모든 것',
+      title: '내 환자의 모든 것',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: kPrimaryGreen),
         useMaterial3: true,

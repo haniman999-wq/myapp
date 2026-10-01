@@ -7,9 +7,9 @@ import 'customer_database.dart';
 
 /// 재방문 알림.
 ///
-/// 고객마다 '연락해야 하는 날 오전 9시'에 휴대폰 알림을 예약해 둡니다.
+/// 환자마다 '연락해야 하는 날 오전 9시'에 휴대폰 알림을 예약해 둡니다.
 /// 데이터가 바뀔 때마다 [sync] 로 전부 다시 계산해서 걸기 때문에,
-/// 재예약이 잡히면 그 고객의 알림은 자연스럽게 사라집니다.
+/// 재예약이 잡히면 그 환자의 알림은 자연스럽게 사라집니다.
 class RevisitNotifier {
   RevisitNotifier._internal();
 
@@ -17,7 +17,7 @@ class RevisitNotifier {
 
   static const _notifyHour = 9;
 
-  /// 복약 알림 id 는 고객 id(재방문 알림)와 겹치지 않게 이 값을 더해 씁니다.
+  /// 복약 알림 id 는 환자 id(재방문 알림)와 겹치지 않게 이 값을 더해 씁니다.
   static const _herbIdBase = 1000000;
 
   final _plugin = FlutterLocalNotificationsPlugin();
@@ -56,7 +56,7 @@ class RevisitNotifier {
     }
   }
 
-  /// 모든 고객의 재방문 알림을 다시 계산해서 예약합니다.
+  /// 모든 환자의 재방문 알림을 다시 계산해서 예약합니다.
   Future<void> sync() async {
     if (!_ready) return;
     if (_syncing) {
@@ -95,7 +95,7 @@ class RevisitNotifier {
             id: _herbIdBase + alertId,
             scheduledDate: when,
             title: '🌿 ${o.herbLabel(alert)} 복약 확인',
-            body: '${o.customer.name} 고객에게 복약 확인 전화를 해주세요.',
+            body: '${o.customer.name} 환자에게 복약 확인 전화를 해주세요.',
             notificationDetails: const NotificationDetails(
               android: AndroidNotificationDetails(
                 'herb',
@@ -122,12 +122,12 @@ class RevisitNotifier {
         id: id,
         scheduledDate: when,
         title: '재방문 연락 필요',
-        body: '${o.customer.name} 고객이 마지막 방문 후 2주가 지났어요. 연락해보세요.',
+        body: '${o.customer.name} 환자가 마지막 방문 후 2주가 지났어요. 연락해보세요.',
         notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             'revisit',
             '재방문 알림',
-            channelDescription: '마지막 방문 후 2주 동안 재예약이 없는 고객 알림',
+            channelDescription: '마지막 방문 후 2주 동안 재예약이 없는 환자 알림',
             importance: Importance.high,
             priority: Priority.high,
           ),

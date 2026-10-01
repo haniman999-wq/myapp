@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/customer.dart';
 import '../theme.dart';
 
-/// 고객 이름. 한약 복용 환자는 보라색 · 아주 굵게 + '🌿 한약' 배지로 확실히 구분합니다.
+/// 환자 이름. 한약 복용 환자는 보라색 · 아주 굵게 + '🌿 한약' 배지로 확실히 구분합니다.
 class CustomerName extends StatelessWidget {
   const CustomerName({
     super.key,

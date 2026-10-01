@@ -8,7 +8,7 @@ const Color kPrimaryGreen = Color(0xFF00C853);
 /// 앱바/버튼 배경 등 흰 글씨를 얹을 때 쓰는 진한 초록 (서브 컬러)
 const Color kPrimaryGreenDark = Color(0xFF009624);
 
-/// 예약일에 오지 않은 고객(노쇼)을 강조하는 색 — 완성본에서 사용 예정
+/// 예약일에 오지 않은 환자(노쇼)를 강조하는 색 — 완성본에서 사용 예정
 const Color kNoShowRed = Color(0xFFE53935);
 
 /// 한약 복용 환자 표시 색 (이름·배지). 다른 상태색(초록·빨강·주황·파랑)과 겹치지 않는 보라.
