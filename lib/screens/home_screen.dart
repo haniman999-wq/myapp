@@ -187,6 +187,7 @@ class _CustomerTile extends StatelessWidget {
             child: CustomerName(
               customer: customer,
               color: needsContact ? kNoShowRed : null,
+              glow: alertGlowOf(overview),
             ),
           ),
           if (needsContact) ...[

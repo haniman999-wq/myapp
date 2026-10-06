@@ -16,3 +16,6 @@ const Color kHerbPurple = Color(0xFF7B1FA2);
 
 /// 7일 동안 알렸는데도 연락 못 한 '놓친 연락' 표시 색.
 const Color kMissedBrown = Color(0xFF8D6E63);
+
+/// 복약 확인이 필요한 환자 이름을 빛나게 하는 금색.
+const Color kGlowGold = Color(0xFFFFB300);

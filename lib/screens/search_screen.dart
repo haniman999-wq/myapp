@@ -119,7 +119,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     final customer = overview.customer;
                     return ListTile(
                       leading: const Icon(Icons.person_outline),
-                      title: CustomerName(customer: customer),
+                      title: CustomerName(
+                        customer: customer,
+                        glow: alertGlowOf(overview),
+                      ),
                       subtitle: Text(
                         '${customer.phone}  ·  최종내원 ${formatDate(overview.lastVisit)}',
                       ),

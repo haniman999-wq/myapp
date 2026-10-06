@@ -80,10 +80,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
             .add(_Entry(o.customer, a));
       }
     }
-    // 취소는 맨 아래, 나머지는 이름순
+    // 취소는 맨 아래, 나머지는 예약 시간순 (시간 없는 예약은 뒤로), 같은 시간이면 이름순
     for (final list in byDay.values) {
       list.sort((a, b) {
         if (a.isCancelled != b.isCancelled) return a.isCancelled ? 1 : -1;
+        final ta = a.appointment.minuteOfDay ?? 24 * 60;
+        final tb = b.appointment.minuteOfDay ?? 24 * 60;
+        if (ta != tb) return ta.compareTo(tb);
         return a.customer.name.compareTo(b.customer.name);
       });
     }
@@ -103,6 +106,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
       _backupDaysAgo = backupDaysAgo;
     });
   }
+
+  Map<int?, CustomerOverview> get _overviewById => {
+    for (final o in _overviews) o.customer.id: o,
+  };
 
   List<_Entry> _entriesFor(DateTime day) => _byDay[dateOnly(day)] ?? const [];
 
@@ -279,6 +286,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         _EntryTile(
                           entry: e,
                           number: i + 1,
+                          glow: alertGlowOf(_overviewById[e.customer.id]),
                           onTap: () => _openDetail(e.customer),
                           onStatusTap: () => showAppointmentSheet(
                             context,
@@ -308,7 +316,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             ),
                             child: const Text('🌿'),
                           ),
-                          title: CustomerName(customer: o.customer),
+                          title: CustomerName(
+                            customer: o.customer,
+                            glow: alertGlowOf(o),
+                          ),
                           subtitle: Text(o.customer.phone),
                           // 오늘이거나 지났는데 아직 확인 안 했으면 깜빡임
                           trailing: Blink(
@@ -470,6 +481,7 @@ class _DayCell extends StatelessWidget {
 /// 선택한 날의 예약자 한 줄. 누르면 환자 상세, 오른쪽 상태 배지를 누르면 상태 변경.
 class _EntryTile extends StatelessWidget {
   const _EntryTile({
+    this.glow,
     required this.entry,
     required this.number,
     required this.onTap,
@@ -478,6 +490,9 @@ class _EntryTile extends StatelessWidget {
 
   final _Entry entry;
   final int number;
+
+  /// 연락 필요 환자면 이름을 빛나게 할 색.
+  final Color? glow;
   final VoidCallback onTap;
   final VoidCallback onStatusTap;
 
@@ -493,14 +508,13 @@ class _EntryTile extends StatelessWidget {
       opacity: entry.isCancelled ? 0.45 : 1,
       child: ListTile(
         onTap: onTap,
-        leading: CircleAvatar(
-          backgroundColor: statusColor.withValues(alpha: 0.15),
-          child: Text(
-            '$number',
-            style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
-          ),
+        // 왼쪽: 예약 시간 (없으면 순번)
+        leading: _TimeBadge(
+          time: a.timeLabel,
+          number: number,
+          color: statusColor,
         ),
-        title: CustomerName(customer: c, strike: entry.isCancelled),
+        title: CustomerName(customer: c, strike: entry.isCancelled, glow: glow),
         subtitle: Text(
           memo.isEmpty ? c.phone : '${c.phone}  ·  $memo',
           maxLines: 1,
@@ -617,6 +631,62 @@ class _BackupReminder extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 명단 왼쪽 예약 시간 표시. 시간이 없으면 순번을 보여줍니다.
+class _TimeBadge extends StatelessWidget {
+  const _TimeBadge({
+    required this.time,
+    required this.number,
+    required this.color,
+  });
+
+  /// '오전 10:30' 형태. null 이면 시간 미정.
+  final String? time;
+  final int number;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = time?.split(' '); // ['오전', '10:30']
+    return Container(
+      width: 58,
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: parts == null
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$number',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text('시간 미정', style: TextStyle(color: color, fontSize: 9)),
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(parts[0], style: TextStyle(color: color, fontSize: 10)),
+                Text(
+                  parts[1],
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

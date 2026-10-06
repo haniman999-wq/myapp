@@ -33,7 +33,7 @@ class CustomerDatabase {
     final path = join(databasesPath, 'my_customers.db');
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: (db, version) async {
         await _createMetaTable(db);
         await db.execute('''
@@ -67,6 +67,12 @@ class CustomerDatabase {
           // ver.5: 앱 설정값 (마지막 백업 시각 등)
           await _createMetaTable(db);
         }
+        if (oldVersion < 6) {
+          // ver.6: 예약 시각
+          await db.execute(
+            'ALTER TABLE appointments ADD COLUMN minuteOfDay INTEGER',
+          );
+        }
       },
     );
   }
@@ -97,7 +103,8 @@ class CustomerDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         customerId INTEGER NOT NULL,
         date TEXT NOT NULL,
-        status TEXT NOT NULL
+        status TEXT NOT NULL,
+        minuteOfDay INTEGER
       )
     ''');
     await db.execute(

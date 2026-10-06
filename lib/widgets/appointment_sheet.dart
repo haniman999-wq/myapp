@@ -47,6 +47,7 @@ class _AppointmentSheet extends StatefulWidget {
 class _AppointmentSheetState extends State<_AppointmentSheet> {
   late DateTime _date;
   late AppointmentStatus _status;
+  int? _minuteOfDay;
 
   bool get _isEditing => widget.existing != null;
 
@@ -55,6 +56,7 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
     super.initState();
     _date = widget.existing?.date ?? dateOnly(widget.initialDate ?? today());
     _status = widget.existing?.status ?? _defaultStatusFor(_date);
+    _minuteOfDay = widget.existing?.minuteOfDay;
   }
 
   /// 오늘·미래 날짜면 '예약', 지난 날짜면 '내원'으로 기본 선택.
@@ -77,6 +79,17 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
     });
   }
 
+  Future<void> _pickTime() async {
+    final m = _minuteOfDay ?? 10 * 60;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: m ~/ 60, minute: m % 60),
+      helpText: '예약 시간',
+    );
+    if (picked == null) return;
+    setState(() => _minuteOfDay = picked.hour * 60 + picked.minute);
+  }
+
   Future<void> _save() async {
     final base =
         widget.existing ??
@@ -86,7 +99,12 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
           status: _status,
         );
     await CustomerDatabase.instance.saveAppointment(
-      base.copyWith(date: _date, status: _status),
+      base.copyWith(
+        date: _date,
+        status: _status,
+        minuteOfDay: _minuteOfDay,
+        clearTime: _minuteOfDay == null,
+      ),
     );
     if (mounted) Navigator.of(context).pop();
   }
@@ -122,6 +140,35 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
               foregroundColor: kPrimaryGreenDark,
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _pickTime,
+                  icon: const Icon(Icons.access_time),
+                  label: Text(
+                    _minuteOfDay == null
+                        ? '시간 선택 (선택사항)'
+                        : formatTimeOfDay(
+                            _minuteOfDay! ~/ 60,
+                            _minuteOfDay! % 60,
+                          ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kPrimaryGreenDark,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              if (_minuteOfDay != null)
+                IconButton(
+                  onPressed: () => setState(() => _minuteOfDay = null),
+                  icon: const Icon(Icons.close),
+                  tooltip: '시간 지우기',
+                ),
+            ],
           ),
           const SizedBox(height: 16),
           SegmentedButton<AppointmentStatus>(

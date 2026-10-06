@@ -216,7 +216,7 @@ class _HerbTile extends StatelessWidget {
           child: const Text('🌿', style: TextStyle(fontSize: 18)),
         ),
       ),
-      title: CustomerName(customer: overview.customer),
+      title: CustomerName(customer: overview.customer, glow: kGlowGold),
       subtitle: Text(
         '${overview.herbLabel(alert)} 확인 · ${formatShortDate(alert.date)}'
         ' · ${late + 1}/$kMaxReminderDays일째 알림',
@@ -281,7 +281,12 @@ class _ContactTile extends StatelessWidget {
         ),
         title: Row(
           children: [
-            Flexible(child: CustomerName(customer: overview.customer)),
+            Flexible(
+              child: CustomerName(
+                customer: overview.customer,
+                glow: alertGlowOf(overview),
+              ),
+            ),
             if (contacted) ...[
               const SizedBox(width: 8),
               StatusChip(

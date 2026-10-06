@@ -26,23 +26,40 @@ class Appointment {
   final DateTime date;
   final AppointmentStatus status;
 
+  /// 예약 시각 (자정부터 몇 분째인지). 시간을 정하지 않았으면 null.
+  final int? minuteOfDay;
+
   const Appointment({
     this.id,
     required this.customerId,
     required this.date,
     required this.status,
+    this.minuteOfDay,
   });
+
+  int? get hour => minuteOfDay == null ? null : minuteOfDay! ~/ 60;
+  int? get minute => minuteOfDay == null ? null : minuteOfDay! % 60;
+
+  /// '오전 10:30'. 시간이 없으면 null.
+  String? get timeLabel =>
+      minuteOfDay == null ? null : formatTimeOfDay(hour!, minute!);
 
   /// 예약일이 지났는데 아직 '예약' 상태 → 내원했는지 확인이 필요.
   bool get needsCheck =>
       status == AppointmentStatus.booked && date.isBefore(today());
 
-  Appointment copyWith({DateTime? date, AppointmentStatus? status}) {
+  Appointment copyWith({
+    DateTime? date,
+    AppointmentStatus? status,
+    int? minuteOfDay,
+    bool clearTime = false,
+  }) {
     return Appointment(
       id: id,
       customerId: customerId,
       date: date ?? this.date,
       status: status ?? this.status,
+      minuteOfDay: clearTime ? null : (minuteOfDay ?? this.minuteOfDay),
     );
   }
 
@@ -52,6 +69,7 @@ class Appointment {
       'customerId': customerId,
       'date': toDbDate(date),
       'status': status.dbValue,
+      'minuteOfDay': minuteOfDay,
     };
   }
 
@@ -61,6 +79,7 @@ class Appointment {
       customerId: map['customerId'] as int,
       date: DateTime.parse(map['date'] as String),
       status: AppointmentStatus.fromDb(map['status'] as String),
+      minuteOfDay: map['minuteOfDay'] as int?,
     );
   }
 }

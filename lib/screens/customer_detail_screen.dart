@@ -287,7 +287,9 @@ class _SummaryCard extends StatelessWidget {
             _InfoRow(label: '마지막 내원', value: formatDate(overview.lastVisit)),
             _InfoRow(
               label: '다음 예약',
-              value: next == null ? '없음' : formatDateWithWeekday(next.date),
+              value: next == null
+                  ? '없음'
+                  : '${formatDateWithWeekday(next.date)}${next.timeLabel == null ? '' : '  ${next.timeLabel}'}',
             ),
             _InfoRow(label: '마지막 연락', value: formatDate(overview.lastContact)),
           ],
@@ -591,7 +593,11 @@ class _AppointmentTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       leading: Icon(Icons.circle, size: 12, color: a.status.color),
-      title: Text(formatDateWithWeekday(a.date)),
+      title: Text(
+        a.timeLabel == null
+            ? formatDateWithWeekday(a.date)
+            : '${formatDateWithWeekday(a.date)}  ${a.timeLabel}',
+      ),
       subtitle: a.needsCheck
           ? const Text(
               '예약일이 지났어요. 내원했나요?',

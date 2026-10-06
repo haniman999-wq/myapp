@@ -203,6 +203,15 @@ const _sections = [
           '날짜를 고르고 상태를 고르면 돼요.',
     ),
     _Block(
+      heading: '예약 시간',
+      items: [
+        '[시간 선택]을 눌러 예약 시간을 넣을 수 있어요. (선택사항, ✕ 로 지우기)',
+        '달력 명단은 예약 시간 순서대로 위에서 아래로 보여요. '
+            '시간이 없는 예약은 맨 아래에 "시간 미정"으로 나와요.',
+        '환자 화면의 기록과 "다음 예약"에도 시간이 함께 보여요.',
+      ],
+    ),
+    _Block(
       heading: '상태 4가지',
       items: [
         '예약(파랑): 앞으로 오기로 한 날. 오늘이나 미래 날짜는 기본으로 \'예약\'이 골라져요.',
@@ -230,7 +239,7 @@ const _sections = [
         '날짜 아래 "3명" 같은 숫자는 그날 예약·내원 인원이에요. '
             '초록 = 오늘·앞으로, 회색 = 지난 날, 주황 = 내원 확인이 필요한 날.',
         '🌿2 는 그날 복약 확인 전화를 해야 하는 한약 환자 수예요.',
-        '날짜를 누르면 아래에 그날 환자 명단이 번호와 함께 나와요. '
+        '날짜를 누르면 아래에 그날 환자 명단이 예약 시간 순서로 나와요. 왼쪽에 "오전 10:30"처럼 시간이 보여요. '
             '이름을 누르면 환자 화면, 오른쪽 상태 표시를 누르면 상태를 바꿀 수 있어요.',
         '[이 날 예약]: 고른 날짜에 바로 예약을 넣어요. (환자를 골라야 해요)',
         '위쪽 [한 달 / 2주 / 1주] 버튼으로 보기를 바꾸고, [오늘]로 오늘로 돌아와요.',
@@ -259,7 +268,19 @@ const _sections = [
       ],
     ),
   ]),
-  _Section(Icons.notifications_active_outlined, '7. 연락 탭 사용법', [
+  _Section(Icons.auto_awesome, '7. 반짝이는 이름 (연락해야 할 환자)', [
+    _Block(
+      text:
+          '지금 연락해야 하는 환자는 달력 명단 · 환자 목록 · 검색 · 연락 탭 어디서든 '
+          '이름 둘레가 반짝반짝 빛나고 🔔 표시가 붙어요. 처리하면 빛이 꺼져요.',
+      items: [
+        '금색으로 빛남: 오늘 복약 확인 전화를 해야 하는 한약 환자',
+        '빨간색으로 빛남: 재방문 연락이 필요한 환자 (일 동안 재예약 없음, 노쇼)',
+        '[연락함] 또는 [확인 완료]를 누르거나 재예약하면 더 이상 빛나지 않아요.',
+      ],
+    ),
+  ]),
+  _Section(Icons.notifications_active_outlined, '8. 연락 탭 사용법', [
     _Block(
       text: '오늘 연락해야 할 환자가 모두 모여 있어요. 위에서부터 이렇게 나와요.',
       items: [
@@ -286,7 +307,7 @@ const _sections = [
       ],
     ),
   ]),
-  _Section(Icons.spa_outlined, '8. 한약 복약 관리', [
+  _Section(Icons.spa_outlined, '9. 한약 복약 관리', [
     _Block(
       text:
           '한약을 먹는 환자는 이름이 보라색·아주 굵게 보이고 🌿 한약 배지가 붙어 한눈에 구분돼요. '
@@ -330,7 +351,7 @@ const _sections = [
       ],
     ),
   ]),
-  _Section(Icons.alarm, '9. 휴대폰 알림', [
+  _Section(Icons.alarm, '10. 휴대폰 알림', [
     _Block(
       text: '환자마다 따로 오지 않고, 매일 아침 정해둔 시간에 한 번 모아서 와요.',
       items: [
@@ -361,7 +382,7 @@ const _sections = [
       ],
     ),
   ]),
-  _Section(Icons.folder_special_outlined, '10. 놓친 연락 보관함', [
+  _Section(Icons.folder_special_outlined, '11. 놓친 연락 보관함', [
     _Block(
       text:
           '연락할 날부터 $kMaxReminderDays일 동안 매일 알렸는데도 [연락함] / [확인 완료]를 '
@@ -374,7 +395,7 @@ const _sections = [
       ],
     ),
   ]),
-  _Section(Icons.search, '11. 검색', [
+  _Section(Icons.search, '12. 검색', [
     _Block(
       items: [
         '이름, 전화번호, 특이사항 메모 내용으로 찾을 수 있어요.',
@@ -383,7 +404,7 @@ const _sections = [
       ],
     ),
   ]),
-  _Section(Icons.backup_outlined, '12. 백업 · 복원 (꼭 해두세요)', [
+  _Section(Icons.backup_outlined, '13. 백업 · 복원 (꼭 해두세요)', [
     _Block(
       text:
           '환자 정보는 이 휴대폰 안에만 저장돼요. 앱을 지우거나 휴대폰을 잃어버리면 '
@@ -420,7 +441,7 @@ const _sections = [
       ],
     ),
   ]),
-  _Section(Icons.help_outline, '13. 자주 묻는 질문', [
+  _Section(Icons.help_outline, '14. 자주 묻는 질문', [
     _Block(
       heading: '여러 휴대폰에서 같이 쓸 수 있나요?',
       text:
