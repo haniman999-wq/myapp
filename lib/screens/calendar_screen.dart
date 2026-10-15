@@ -290,6 +290,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           milestone: _overviewById[e.customer.id]?.milestoneOf(
                             e.appointment,
                           ),
+                          visitNumber: _overviewById[e.customer.id]
+                              ?.visitNumberOf(e.appointment),
                           onTap: () => _openDetail(e.customer),
                           onStatusTap: () => showAppointmentSheet(
                             context,
@@ -484,6 +486,7 @@ class _DayCell extends StatelessWidget {
 /// 선택한 날의 예약자 한 줄. 누르면 환자 상세, 오른쪽 상태 배지를 누르면 상태 변경.
 class _EntryTile extends StatelessWidget {
   const _EntryTile({
+    this.visitNumber,
     this.milestone,
     this.glow,
     required this.entry,
@@ -500,6 +503,9 @@ class _EntryTile extends StatelessWidget {
 
   /// 5회차 같은 기념 회차면 그 숫자.
   final int? milestone;
+
+  /// 몇 회차인지. 1이면 초진. (취소·노쇼는 null)
+  final int? visitNumber;
   final VoidCallback onTap;
   final VoidCallback onStatusTap;
 
@@ -515,33 +521,80 @@ class _EntryTile extends StatelessWidget {
     final statusLabel = a.needsCheck ? '내원 확인' : a.status.label;
     final statusColor = a.needsCheck ? Colors.orange : a.status.color;
 
+    // 초진(1회차): 줄 전체를 연한 파랑 + 왼쪽 진한 파란 띠 + [초진] 배지
+    final firstVisit = visitNumber == 1;
+
     return Opacity(
       opacity: entry.isCancelled ? 0.45 : 1,
-      child: ListTile(
-        onTap: onTap,
-        // 왼쪽: 예약 시간 (없으면 순번)
-        leading: _TimeBadge(
-          time: a.timeLabel,
-          number: number,
-          color: statusColor,
-        ),
-        title: CustomerName(
-          customer: c,
-          strike: entry.isCancelled,
-          glow: glow,
-          milestone: milestone,
-        ),
-        subtitle: Text(
-          memo.isEmpty ? c.phone : '${c.phone}  ·  $memo',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: InkWell(
-          onTap: onStatusTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: StatusChip(label: statusLabel, color: statusColor),
+      child: Container(
+        decoration: firstVisit
+            ? const BoxDecoration(
+                color: kFirstVisitTint,
+                border: Border(
+                  left: BorderSide(color: kFirstVisitBlue, width: 5),
+                ),
+              )
+            : null,
+        child: ListTile(
+          onTap: onTap,
+          // 왼쪽: 예약 시간 (없으면 순번)
+          leading: _TimeBadge(
+            time: a.timeLabel,
+            number: number,
+            color: statusColor,
+          ),
+          title: Row(
+            children: [
+              if (firstVisit) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: kFirstVisitBlue,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    '초진',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: CustomerName(
+                  customer: c,
+                  strike: entry.isCancelled,
+                  glow: glow,
+                  milestone: milestone,
+                ),
+              ),
+              if (visitNumber != null && !firstVisit && milestone == null) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '$visitNumber회차',
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ],
+          ),
+          subtitle: Text(
+            memo.isEmpty ? c.phone : '${c.phone}  ·  $memo',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: InkWell(
+            onTap: onStatusTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: StatusChip(label: statusLabel, color: statusColor),
+            ),
           ),
         ),
       ),

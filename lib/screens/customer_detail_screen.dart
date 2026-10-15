@@ -634,6 +634,22 @@ class _AppointmentTile extends StatelessWidget {
             const SizedBox(width: 8),
             if (visitNumber == kMilestoneVisit)
               MilestoneBadge(number: visitNumber!, size: 22)
+            else if (visitNumber == 1)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: kFirstVisitBlue,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: const Text(
+                  '초진',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )
             else
               Text(
                 '$visitNumber회차',

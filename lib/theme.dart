@@ -25,3 +25,7 @@ const Color kHerbTeal = Color(0xFF00796B);
 
 /// 기념 회차(5회차) 동그라미 숫자 색.
 const Color kMilestonePink = Color(0xFFE91E63);
+
+/// 초진(첫 예약·내원) 표시: 진한 파랑(띠·배지)과 연한 파랑(줄 배경).
+const Color kFirstVisitBlue = Color(0xFF1565C0);
+const Color kFirstVisitTint = Color(0xFFE3F0FC);
