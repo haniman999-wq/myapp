@@ -6,6 +6,7 @@ import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
 import '../widgets/customer_name.dart';
+import '../widgets/herb_energy_bar.dart';
 
 /// 한약 복약 시작 / 수정 화면.
 ///
@@ -31,6 +32,7 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
   late DateTime _start;
   late List<DateTime> _dates;
   late HerbType _type;
+  int? _days;
 
   bool get _isNew => !widget.customer.isHerbal;
 
@@ -39,6 +41,8 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
     super.initState();
     _start = dateOnly(widget.customer.herbStart ?? today());
     _type = widget.customer.herbType;
+    // 처음 시작할 때는 1개월을 기본으로 골라 둡니다.
+    _days = _isNew ? kHerbDurations.first : widget.customer.herbDays;
     _dates = _isNew
         ? _defaultDatesFor(_type)
         : [for (final a in widget.pendingAlerts) dateOnly(a.date)];
@@ -135,6 +139,7 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
       start: _start,
       dates: _dates,
       type: _type,
+      days: _days,
     );
     if (mounted) Navigator.of(context).pop(true);
   }
@@ -163,6 +168,7 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
             customer: widget.customer.copyWith(
               herbStart: _start,
               herbType: _type,
+              herbDays: _days,
             ),
             fontSize: 20,
           ),
@@ -196,6 +202,53 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
               '기본 확인 전화: 시작일 + '
               '${_type.defaultDays.map((d) => '$d일').join(', ')}',
               style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '복약 기간',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: kHerbPurple,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<int>(
+            segments: [
+              for (final d in kHerbDurations)
+                ButtonSegment(value: d, label: Text(herbDurationLabel(d))),
+            ],
+            selected: {?_days},
+            emptySelectionAllowed: true,
+            showSelectedIcon: false,
+            style: SegmentedButton.styleFrom(
+              selectedBackgroundColor: herbColorOf(
+                _type,
+              ).withValues(alpha: 0.18),
+              selectedForegroundColor: herbColorOf(_type),
+            ),
+            onSelectionChanged: (v) =>
+                setState(() => _days = v.isEmpty ? null : v.first),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            child: Row(
+              children: [
+                HerbEnergyBar(
+                  customer: widget.customer.copyWith(
+                    herbStart: _start,
+                    herbDays: _days,
+                  ),
+                  showDays: true,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    '1칸 = 15일. 날이 지나면 한 칸씩 줄어요.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),

@@ -79,3 +79,15 @@ enum HerbType {
   static HerbType fromDb(String? value) =>
       values.firstWhere((t) => t.dbValue == value, orElse: () => nonInsured);
 }
+
+/// 고를 수 있는 복약 기간(일): 1개월 · 2개월 · 3개월.
+const List<int> kHerbDurations = [30, 60, 90];
+
+/// 에너지바 한 칸이 뜻하는 날 수. 최대 3개월(90일) = 6칸.
+const int kHerbBarCellDays = 15;
+
+/// 에너지바 전체 칸 수 (3개월 기준).
+const int kHerbBarCells = 6;
+
+/// '1개월' 처럼 보여줄 이름.
+String herbDurationLabel(int days) => '${days ~/ 30}개월';

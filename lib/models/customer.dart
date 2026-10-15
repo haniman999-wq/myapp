@@ -13,6 +13,7 @@ class Customer {
   final String memo; // 특이사항 메모
   final DateTime? herbStart; // 한약 복약 시작일 (null = 한약 환자 아님)
   final HerbType herbType; // 한약 종류 (건보첩약 | 비급여)
+  final int? herbDays; // 복약 기간(일): 30 · 60 · 90. 정하지 않았으면 null
   final DateTime createdAt;
 
   const Customer({
@@ -23,11 +24,22 @@ class Customer {
     this.memo = '',
     this.herbStart,
     this.herbType = HerbType.nonInsured,
+    this.herbDays,
     required this.createdAt,
   });
 
   /// 지금 한약을 복용 중인 환자인지.
   bool get isHerbal => herbStart != null;
+
+  /// 남은 복약 일수 (0 ~ [herbDays]). 기간을 정하지 않았으면 null.
+  /// 일정 미루기로 시작일이 뒤로 가면 남은 일수도 그만큼 늘어납니다.
+  int? get herbRemainingDays {
+    final start = herbStart;
+    final days = herbDays;
+    if (start == null || days == null) return null;
+    final end = dateOnly(start).add(Duration(days: days));
+    return end.difference(today()).inDays.clamp(0, days);
+  }
 
   Customer copyWith({
     int? id,
@@ -37,6 +49,7 @@ class Customer {
     String? memo,
     DateTime? herbStart,
     HerbType? herbType,
+    int? herbDays,
     DateTime? createdAt,
     bool clearHerbStart = false,
   }) {
@@ -48,6 +61,7 @@ class Customer {
       memo: memo ?? this.memo,
       herbStart: clearHerbStart ? null : (herbStart ?? this.herbStart),
       herbType: herbType ?? this.herbType,
+      herbDays: herbDays ?? this.herbDays,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -62,6 +76,7 @@ class Customer {
       'memo': memo,
       'herbStart': start == null ? null : toDbDate(start),
       'herbType': start == null ? null : herbType.dbValue,
+      'herbDays': start == null ? null : herbDays,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -76,6 +91,7 @@ class Customer {
       memo: (map['memo'] as String?) ?? '',
       herbStart: start == null ? null : DateTime.parse(start),
       herbType: HerbType.fromDb(map['herbType'] as String?),
+      herbDays: map['herbDays'] as int?,
       createdAt: DateTime.parse(map['createdAt'] as String),
     );
   }

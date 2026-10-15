@@ -4,6 +4,7 @@ import '../models/customer.dart';
 import '../models/customer_overview.dart';
 import '../models/herb_alert.dart';
 import '../theme.dart';
+import 'herb_energy_bar.dart';
 
 /// 지금 연락해야 하는 환자면 이름을 빛나게 할 색. 아니면 null.
 /// 복약 확인 → 금색, 재방문 연락 → 빨강.
@@ -57,22 +58,20 @@ class CustomerName extends StatelessWidget {
         decoration: strike ? TextDecoration.lineThrough : null,
       ),
     );
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    // 이름은 잘리지 않게 하고, 표시(🌿·에너지바·회차)는 자리가 모자라면 다음 줄로 넘어갑니다.
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Flexible(
-          child: glow == null || strike
-              ? name
-              : _GlowingName(color: glow, child: name),
-        ),
-        if (herbal) ...[
-          const SizedBox(width: 6),
-          HerbBadge(type: customer.herbType),
-        ],
-        if (milestone != null) ...[
-          const SizedBox(width: 6),
-          MilestoneBadge(number: milestone!),
-        ],
+        if (glow == null || strike)
+          name
+        else
+          _GlowingName(color: glow, child: name),
+        if (herbal) HerbBadge(type: customer.herbType),
+        if (herbal && customer.herbDays != null)
+          HerbEnergyBar(customer: customer),
+        if (milestone != null) MilestoneBadge(number: milestone!),
       ],
     );
   }

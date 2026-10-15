@@ -5,6 +5,7 @@ import 'package:idea_vault/models/customer_overview.dart';
 import 'package:idea_vault/models/herb_alert.dart';
 import 'package:idea_vault/services/revisit_notifier.dart';
 import 'package:idea_vault/utils/date_format.dart';
+import 'package:idea_vault/widgets/herb_energy_bar.dart';
 
 CustomerOverview overviewWith(
   List<(int daysFromToday, AppointmentStatus status)> appts, {
@@ -237,6 +238,70 @@ void main() {
       expect(o.milestoneOf(byDays[-3]!), 5);
       expect(o.milestoneOf(byDays[-10]!), isNull);
       expect(o.upcomingMilestone, 5); // 다음 예약이 5회차
+    });
+  });
+
+  group('복약 에너지바', () {
+    Customer herb({required int startDaysAgo, required int days}) => Customer(
+      name: '바',
+      phone: '010',
+      gender: '여',
+      herbStart: today().subtract(Duration(days: startDaysAgo)),
+      herbDays: days,
+      createdAt: today(),
+    );
+
+    test('3개월: 시작일 6칸, 15일 뒤 5칸, 90일 뒤 0칸', () {
+      expect(
+        HerbEnergyBar.filledCells(
+          herb(startDaysAgo: 0, days: 90).herbRemainingDays!,
+        ),
+        6,
+      );
+      expect(herb(startDaysAgo: 15, days: 90).herbRemainingDays, 75);
+      expect(HerbEnergyBar.filledCells(75), 5);
+      expect(
+        HerbEnergyBar.filledCells(
+          herb(startDaysAgo: 90, days: 90).herbRemainingDays!,
+        ),
+        0,
+      );
+    });
+
+    test('1개월은 2칸, 2개월은 4칸에서 시작', () {
+      expect(
+        HerbEnergyBar.filledCells(
+          herb(startDaysAgo: 0, days: 30).herbRemainingDays!,
+        ),
+        2,
+      );
+      expect(
+        HerbEnergyBar.filledCells(
+          herb(startDaysAgo: 0, days: 60).herbRemainingDays!,
+        ),
+        4,
+      );
+    });
+
+    test('일정 미루기(시작일이 뒤로)만큼 다시 채워진다', () {
+      // 20일 지난 3개월 환자 → 70일 남음. 7일 미루면 시작일이 7일 뒤로 → 77일 남음
+      expect(herb(startDaysAgo: 20, days: 90).herbRemainingDays, 70);
+      expect(herb(startDaysAgo: 13, days: 90).herbRemainingDays, 77);
+    });
+
+    test('기간을 정하지 않았으면 표시 안 함', () {
+      final c = Customer(
+        name: '없음',
+        phone: '010',
+        gender: '남',
+        herbStart: today(),
+        createdAt: today(),
+      );
+      expect(c.herbRemainingDays, isNull);
+      expect(
+        Customer.fromMap(herb(startDaysAgo: 0, days: 60).toMap()).herbDays,
+        60,
+      );
     });
   });
 }

@@ -10,6 +10,7 @@ import '../utils/date_format.dart';
 import '../utils/phone.dart';
 import '../widgets/appointment_sheet.dart';
 import '../widgets/customer_name.dart';
+import '../widgets/herb_energy_bar.dart';
 import '../widgets/status_chip.dart';
 import 'customer_form_screen.dart';
 import 'herb_plan_screen.dart';
@@ -371,6 +372,24 @@ class _HerbCard extends StatelessWidget {
             '${elapsed >= 0 ? '  ·  오늘 복약 $elapsed일째' : ''}',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
+          if (overview.customer.herbDays != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  '복약 기간 ${herbDurationLabel(overview.customer.herbDays!)}',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                const SizedBox(width: 10),
+                HerbEnergyBar(
+                  customer: overview.customer,
+                  cellWidth: 14,
+                  cellHeight: 16,
+                  showDays: true,
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 8),
           if (pending.isEmpty)
             const Text('남은 복약 알림이 없어요.', style: TextStyle(color: Colors.grey)),
