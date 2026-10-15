@@ -9,7 +9,7 @@ import '../models/herb_alert.dart';
 /// - 처방한 기간만큼 칸이 있고 (1개월 2칸, 2개월 4칸, 3개월 6칸),
 ///   남은 복약 일수만큼 칸이 채워져 있습니다.
 /// - 15일이 지날 때마다 한 칸씩 줄어듭니다.
-/// - 처방 기간 밖의 칸은 흐린 점선 칸으로 보여 3개월 기준을 알 수 있게 합니다.
+/// - 한 달(2칸)씩 테두리로 묶어 띄우고, 처방 기간 밖의 달은 흐린 테두리로 보여 3개월 기준을 알 수 있게 합니다.
 /// - 일정 미루기로 시작일이 뒤로 가면 그만큼 다시 채워집니다.
 class HerbEnergyBar extends StatelessWidget {
   const HerbEnergyBar({
@@ -48,34 +48,49 @@ class HerbEnergyBar extends StatelessWidget {
     final filled = filledCells(remaining);
     final color = colorFor(remaining / total);
 
-    final bar = Container(
-      padding: const EdgeInsets.all(1.5),
+    // 한 달(2칸)씩 테두리로 묶고 묶음 사이를 넓게 띄워, "몇 달 남았는지" 바로 보이게 합니다.
+    const cellsPerMonth = 2;
+    const months = kHerbBarCells ~/ cellsPerMonth;
+    Widget cell(int i) => Container(
+      width: cellWidth,
+      height: cellHeight,
+      margin: EdgeInsets.only(left: i % cellsPerMonth == 0 ? 0 : 1.5),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade500, width: 1),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(1.5),
+        color: i < filled
+            ? color
+            : i < planCells
+            ? Colors.grey.shade300
+            : Colors.transparent,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < kHerbBarCells; i++)
-            Container(
-              width: cellWidth,
-              height: cellHeight,
-              margin: EdgeInsets.only(left: i == 0 ? 0 : 1.5),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(1.5),
-                color: i < filled
-                    ? color
-                    : i < planCells
-                    ? Colors.grey.shade300
-                    : Colors.transparent,
-                border: i >= planCells
-                    ? Border.all(color: Colors.grey.shade300, width: 0.8)
-                    : null,
+    );
+
+    final bar = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var m = 0; m < months; m++)
+          Container(
+            margin: EdgeInsets.only(left: m == 0 ? 0 : cellWidth * 0.6),
+            padding: const EdgeInsets.all(1.5),
+            decoration: BoxDecoration(
+              // 처방 기간 밖의 달은 흐린 테두리로만
+              border: Border.all(
+                color: m * cellsPerMonth < planCells
+                    ? Colors.grey.shade600
+                    : Colors.grey.shade300,
+                width: 1,
               ),
+              borderRadius: BorderRadius.circular(3),
             ),
-        ],
-      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var c = 0; c < cellsPerMonth; c++)
+                  cell(m * cellsPerMonth + c),
+              ],
+            ),
+          ),
+      ],
     );
 
     final tooltip = remaining == 0
