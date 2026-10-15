@@ -180,7 +180,7 @@ void main() {
     test('요약 알림: 이름 뒤에 며칠째인지, 7일 지나면 빠짐', () {
       final herb = herbOverview(startDaysAgo: 17, alerts: [(-2, false)]);
       final s = DailySummary.of([herb], today());
-      expect(s.body, contains('김한약//비급//(3일째)'));
+      expect(s.body, contains('김한약(비급)(3일째)'));
 
       final old = herbOverview(startDaysAgo: 22, alerts: [(-7, false)]);
       expect(DailySummary.of([old], today()).isEmpty, isTrue);
@@ -194,8 +194,8 @@ void main() {
     });
 
     test('이름 뒤 표시', () {
-      expect(HerbType.insured.nameTag, '//건//');
-      expect(HerbType.nonInsured.nameTag, '//비급//');
+      expect(HerbType.insured.nameTag, '건');
+      expect(HerbType.nonInsured.nameTag, '비급');
     });
 
     test('예전 데이터(종류 없음)는 비급여로 본다', () {

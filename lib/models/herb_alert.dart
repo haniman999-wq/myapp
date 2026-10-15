@@ -67,13 +67,13 @@ enum HerbType {
   final String dbValue;
   final String label;
 
-  /// 이름 뒤에 붙는 짧은 표시. 화면에는 '//건//' 처럼 보입니다.
+  /// 이름 뒤에 붙는 짧은 표시. 화면에는 '🌿 건' 처럼 보입니다.
   final String tag;
 
   /// 복약 시작일로부터 기본으로 잡는 확인 전화 날짜(일).
   final List<int> defaultDays;
 
-  String get nameTag => '//$tag//';
+  String get nameTag => tag;
 
   /// 예전 데이터(종류 칸이 없던 때)는 비급여로 봅니다.
   static HerbType fromDb(String? value) =>

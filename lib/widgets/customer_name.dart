@@ -76,7 +76,7 @@ class HerbBadge extends StatelessWidget {
 
   final HerbType type;
 
-  /// null 이면 '//건//', '//비급//' 같은 종류 표시.
+  /// null 이면 '건', '비급' 같은 종류 표시.
   final String? label;
 
   @override
