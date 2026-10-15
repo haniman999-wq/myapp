@@ -602,10 +602,48 @@ class _AppointmentTile extends StatelessWidget {
             ? formatDateWithWeekday(a.date)
             : '${formatDateWithWeekday(a.date)}  ${a.timeLabel}',
       ),
-      subtitle: a.needsCheck
-          ? const Text(
-              '예약일이 지났어요. 내원했나요?',
-              style: TextStyle(color: Colors.orange),
+      subtitle: a.needsCheck || a.memo.isNotEmpty
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (a.needsCheck)
+                  const Text(
+                    '예약일이 지났어요. 내원했나요?',
+                    style: TextStyle(color: Colors.orange),
+                  ),
+                if (a.memo.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF8E1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.edit_note,
+                          size: 16,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            a.memo,
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             )
           : null,
       trailing: a.needsCheck

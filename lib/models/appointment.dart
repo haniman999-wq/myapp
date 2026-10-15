@@ -29,12 +29,16 @@ class Appointment {
   /// 예약 시각 (자정부터 몇 분째인지). 시간을 정하지 않았으면 null.
   final int? minuteOfDay;
 
+  /// 이 날짜 기록에 남기는 메모 (치료 내용, 전달 사항 등).
+  final String memo;
+
   const Appointment({
     this.id,
     required this.customerId,
     required this.date,
     required this.status,
     this.minuteOfDay,
+    this.memo = '',
   });
 
   int? get hour => minuteOfDay == null ? null : minuteOfDay! ~/ 60;
@@ -52,6 +56,7 @@ class Appointment {
     DateTime? date,
     AppointmentStatus? status,
     int? minuteOfDay,
+    String? memo,
     bool clearTime = false,
   }) {
     return Appointment(
@@ -60,6 +65,7 @@ class Appointment {
       date: date ?? this.date,
       status: status ?? this.status,
       minuteOfDay: clearTime ? null : (minuteOfDay ?? this.minuteOfDay),
+      memo: memo ?? this.memo,
     );
   }
 
@@ -70,6 +76,7 @@ class Appointment {
       'date': toDbDate(date),
       'status': status.dbValue,
       'minuteOfDay': minuteOfDay,
+      'memo': memo,
     };
   }
 
@@ -80,6 +87,7 @@ class Appointment {
       date: DateTime.parse(map['date'] as String),
       status: AppointmentStatus.fromDb(map['status'] as String),
       minuteOfDay: map['minuteOfDay'] as int?,
+      memo: (map['memo'] as String?) ?? '',
     );
   }
 }

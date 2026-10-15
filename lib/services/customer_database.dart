@@ -33,7 +33,7 @@ class CustomerDatabase {
     final path = join(databasesPath, 'my_customers.db');
     return openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: (db, version) async {
         await _createMetaTable(db);
         await db.execute('''
@@ -81,6 +81,12 @@ class CustomerDatabase {
             "UPDATE customers SET herbType = 'nonInsured' WHERE herbStart IS NOT NULL",
           );
         }
+        if (oldVersion < 8) {
+          // ver.8: 날짜별(예약·내원 기록) 메모
+          await db.execute(
+            "ALTER TABLE appointments ADD COLUMN memo TEXT NOT NULL DEFAULT ''",
+          );
+        }
       },
     );
   }
@@ -112,7 +118,8 @@ class CustomerDatabase {
         customerId INTEGER NOT NULL,
         date TEXT NOT NULL,
         status TEXT NOT NULL,
-        minuteOfDay INTEGER
+        minuteOfDay INTEGER,
+        memo TEXT NOT NULL DEFAULT ''
       )
     ''');
     await db.execute(

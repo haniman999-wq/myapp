@@ -48,6 +48,7 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
   late DateTime _date;
   late AppointmentStatus _status;
   int? _minuteOfDay;
+  late final TextEditingController _memoController;
 
   bool get _isEditing => widget.existing != null;
 
@@ -57,6 +58,13 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
     _date = widget.existing?.date ?? dateOnly(widget.initialDate ?? today());
     _status = widget.existing?.status ?? _defaultStatusFor(_date);
     _minuteOfDay = widget.existing?.minuteOfDay;
+    _memoController = TextEditingController(text: widget.existing?.memo ?? '');
+  }
+
+  @override
+  void dispose() {
+    _memoController.dispose();
+    super.dispose();
   }
 
   /// 오늘·미래 날짜면 '예약', 지난 날짜면 '내원'으로 기본 선택.
@@ -104,6 +112,7 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
         status: _status,
         minuteOfDay: _minuteOfDay,
         clearTime: _minuteOfDay == null,
+        memo: _memoController.text.trim(),
       ),
     );
     if (mounted) Navigator.of(context).pop();
@@ -179,6 +188,24 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
             selected: {_status},
             showSelectedIcon: false,
             onSelectionChanged: (v) => setState(() => _status = v.first),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _memoController,
+            minLines: 2,
+            maxLines: 5,
+            keyboardType: TextInputType.multiline,
+            decoration: InputDecoration(
+              labelText: '이 날 메모',
+              hintText: '치료 내용, 전달 사항 등',
+              alignLabelWithHint: true,
+              prefixIcon: const Icon(Icons.edit_note),
+              border: const OutlineInputBorder(),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: kPrimaryGreen, width: 2),
+              ),
+              floatingLabelStyle: const TextStyle(color: kPrimaryGreenDark),
+            ),
           ),
           const SizedBox(height: 20),
           FilledButton(

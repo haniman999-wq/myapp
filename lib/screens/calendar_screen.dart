@@ -500,7 +500,11 @@ class _EntryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final a = entry.appointment;
     final c = entry.customer;
-    final memo = c.memo.trim().split('\n').first;
+    // 그 날 기록 메모가 있으면 우선, 없으면 환자 특이사항 첫 줄
+    final dayMemo = a.memo.trim().split('\n').first;
+    final memo = dayMemo.isNotEmpty
+        ? '📝 $dayMemo'
+        : c.memo.trim().split('\n').first;
     final statusLabel = a.needsCheck ? '내원 확인' : a.status.label;
     final statusColor = a.needsCheck ? Colors.orange : a.status.color;
 
