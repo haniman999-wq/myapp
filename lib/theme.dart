@@ -19,3 +19,6 @@ const Color kMissedBrown = Color(0xFF8D6E63);
 
 /// 복약 확인이 필요한 환자 이름을 빛나게 하는 금색.
 const Color kGlowGold = Color(0xFFFFB300);
+
+/// 건보첩약 환자 표시 색 (이름·배지). 비급여(보라)와 구분됩니다.
+const Color kHerbTeal = Color(0xFF00796B);

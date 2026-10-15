@@ -180,10 +180,39 @@ void main() {
     test('요약 알림: 이름 뒤에 며칠째인지, 7일 지나면 빠짐', () {
       final herb = herbOverview(startDaysAgo: 17, alerts: [(-2, false)]);
       final s = DailySummary.of([herb], today());
-      expect(s.body, contains('김한약(3일째)'));
+      expect(s.body, contains('김한약//비급//(3일째)'));
 
       final old = herbOverview(startDaysAgo: 22, alerts: [(-7, false)]);
       expect(DailySummary.of([old], today()).isEmpty, isTrue);
+    });
+  });
+
+  group('한약 종류', () {
+    test('건보첩약은 10일, 비급여는 15·25일이 기본', () {
+      expect(HerbType.insured.defaultDays, [10]);
+      expect(HerbType.nonInsured.defaultDays, [15, 25]);
+    });
+
+    test('이름 뒤 표시', () {
+      expect(HerbType.insured.nameTag, '//건//');
+      expect(HerbType.nonInsured.nameTag, '//비급//');
+    });
+
+    test('예전 데이터(종류 없음)는 비급여로 본다', () {
+      expect(HerbType.fromDb(null), HerbType.nonInsured);
+      expect(HerbType.fromDb('insured'), HerbType.insured);
+    });
+
+    test('Customer 저장·불러오기에 종류가 유지된다', () {
+      final c = Customer(
+        name: '건보',
+        phone: '010',
+        gender: '남',
+        herbStart: today(),
+        herbType: HerbType.insured,
+        createdAt: today(),
+      );
+      expect(Customer.fromMap(c.toMap()).herbType, HerbType.insured);
     });
   });
 }

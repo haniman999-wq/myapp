@@ -1,4 +1,5 @@
 import '../utils/date_format.dart';
+import 'herb_alert.dart';
 
 /// 환자 한 명의 기본 정보.
 ///
@@ -11,6 +12,7 @@ class Customer {
   final String gender; // 성별 ('남' | '여')
   final String memo; // 특이사항 메모
   final DateTime? herbStart; // 한약 복약 시작일 (null = 한약 환자 아님)
+  final HerbType herbType; // 한약 종류 (건보첩약 | 비급여)
   final DateTime createdAt;
 
   const Customer({
@@ -20,6 +22,7 @@ class Customer {
     required this.gender,
     this.memo = '',
     this.herbStart,
+    this.herbType = HerbType.nonInsured,
     required this.createdAt,
   });
 
@@ -33,6 +36,7 @@ class Customer {
     String? gender,
     String? memo,
     DateTime? herbStart,
+    HerbType? herbType,
     DateTime? createdAt,
     bool clearHerbStart = false,
   }) {
@@ -43,6 +47,7 @@ class Customer {
       gender: gender ?? this.gender,
       memo: memo ?? this.memo,
       herbStart: clearHerbStart ? null : (herbStart ?? this.herbStart),
+      herbType: herbType ?? this.herbType,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -56,6 +61,7 @@ class Customer {
       'gender': gender,
       'memo': memo,
       'herbStart': start == null ? null : toDbDate(start),
+      'herbType': start == null ? null : herbType.dbValue,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -69,6 +75,7 @@ class Customer {
       gender: map['gender'] as String,
       memo: (map['memo'] as String?) ?? '',
       herbStart: start == null ? null : DateTime.parse(start),
+      herbType: HerbType.fromDb(map['herbType'] as String?),
       createdAt: DateTime.parse(map['createdAt'] as String),
     );
   }

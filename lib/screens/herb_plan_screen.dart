@@ -10,7 +10,7 @@ import '../widgets/customer_name.dart';
 /// 한약 복약 시작 / 수정 화면.
 ///
 /// 복약 시작일과 확인 전화 알림 날짜(최대 [kMaxHerbAlerts]개)를 정합니다.
-/// 처음 시작할 때는 시작일 + [kDefaultHerbAlertDays] 가 자동으로 채워집니다.
+/// 처음 시작할 때는 고른 한약 종류의 기본 날짜(건보첩약 10일, 비급여 15·25일)가 자동으로 채워집니다.
 class HerbPlanScreen extends StatefulWidget {
   const HerbPlanScreen({
     super.key,
@@ -30,6 +30,7 @@ class HerbPlanScreen extends StatefulWidget {
 class _HerbPlanScreenState extends State<HerbPlanScreen> {
   late DateTime _start;
   late List<DateTime> _dates;
+  late HerbType _type;
 
   bool get _isNew => !widget.customer.isHerbal;
 
@@ -37,13 +38,48 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
   void initState() {
     super.initState();
     _start = dateOnly(widget.customer.herbStart ?? today());
+    _type = widget.customer.herbType;
     _dates = _isNew
-        ? [for (final d in kDefaultHerbAlertDays) _start.add(Duration(days: d))]
+        ? _defaultDatesFor(_type)
         : [for (final a in widget.pendingAlerts) dateOnly(a.date)];
     _sort();
   }
 
   void _sort() => _dates.sort();
+
+  List<DateTime> _defaultDatesFor(HerbType type) => [
+    for (final d in type.defaultDays) _start.add(Duration(days: d)),
+  ];
+
+  bool _sameDates(List<DateTime> a, List<DateTime> b) =>
+      a.length == b.length &&
+      [
+        for (var i = 0; i < a.length; i++) isSameDate(a[i], b[i]),
+      ].every((x) => x);
+
+  /// 종류를 바꾸면, 알림 날짜를 아직 손대지 않았을 때(기본값 그대로)만 새 종류의 기본 날짜로 바꿉니다.
+  void _changeType(HerbType type) {
+    if (type == _type) return;
+    final untouched =
+        _dates.isEmpty || _sameDates(_dates, _defaultDatesFor(_type));
+    setState(() {
+      if (untouched) _dates = _defaultDatesFor(type);
+      _type = type;
+    });
+    if (untouched) return;
+    // 날짜를 직접 손본 경우엔 그대로 두고, 원하면 기본 날짜로 바꿀 수 있게 합니다.
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${type.label}로 바꿨어요. 알림 날짜는 그대로예요.'),
+          action: SnackBarAction(
+            label: '기본 날짜로 바꾸기',
+            onPressed: () => setState(() => _dates = _defaultDatesFor(_type)),
+          ),
+        ),
+      );
+  }
 
   bool get _isFull => _dates.length >= kMaxHerbAlerts;
 
@@ -98,13 +134,14 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
       customerId: widget.customer.id!,
       start: _start,
       dates: _dates,
+      type: _type,
     );
     if (mounted) Navigator.of(context).pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    const quickDays = [7, 15, 25, 30, 45, 60, 90];
+    const quickDays = [7, 10, 15, 25, 30, 45, 60, 90];
 
     return Scaffold(
       appBar: AppBar(
@@ -123,8 +160,43 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           CustomerName(
-            customer: widget.customer.copyWith(herbStart: _start),
+            customer: widget.customer.copyWith(
+              herbStart: _start,
+              herbType: _type,
+            ),
             fontSize: 20,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '한약 종류',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: kHerbPurple,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<HerbType>(
+            segments: [
+              for (final t in HerbType.values)
+                ButtonSegment(value: t, label: Text(t.label)),
+            ],
+            selected: {_type},
+            showSelectedIcon: false,
+            style: SegmentedButton.styleFrom(
+              selectedBackgroundColor: herbColorOf(
+                _type,
+              ).withValues(alpha: 0.18),
+              selectedForegroundColor: herbColorOf(_type),
+            ),
+            onSelectionChanged: (v) => _changeType(v.first),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+            child: Text(
+              '기본 확인 전화: 시작일 + '
+              '${_type.defaultDays.map((d) => '$d일').join(', ')}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
           ),
           const SizedBox(height: 16),
           Card(

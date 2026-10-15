@@ -170,7 +170,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                 ),
                 if (customer.isHerbal) ...[
                   const SizedBox(width: 8),
-                  const HerbBadge(),
+                  HerbBadge(type: customer.herbType),
                 ],
               ],
             ),
@@ -336,26 +336,30 @@ class _HerbCard extends StatelessWidget {
     }
 
     final pending = overview.pendingHerbAlerts;
+    final hc = herbColorOf(overview.customer.herbType);
     final elapsed = today().difference(start).inDays;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: kHerbPurple.withValues(alpha: 0.06),
+        color: hc.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kHerbPurple.withValues(alpha: 0.5)),
+        border: Border.all(color: hc.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const HerbBadge(label: '한약 복약 중'),
+              HerbBadge(
+                type: overview.customer.herbType,
+                label: '${overview.customer.herbType.label} 복약 중',
+              ),
               const Spacer(),
               TextButton(
                 onPressed: onStartOrEdit,
-                style: TextButton.styleFrom(foregroundColor: kHerbPurple),
+                style: TextButton.styleFrom(foregroundColor: hc),
                 child: const Text('일정 수정'),
               ),
             ],
@@ -379,14 +383,14 @@ class _HerbCard extends StatelessWidget {
                         ? Icons.notifications_active
                         : Icons.notifications_none,
                     size: 18,
-                    color: a.isDue ? kNoShowRed : kHerbPurple,
+                    color: a.isDue ? kNoShowRed : hc,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     overview.herbLabel(a),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: a.isDue ? kNoShowRed : kHerbPurple,
+                      color: a.isDue ? kNoShowRed : hc,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -408,7 +412,7 @@ class _HerbCard extends StatelessWidget {
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: kHerbPurple),
+                  style: FilledButton.styleFrom(backgroundColor: hc),
                   onPressed: onPostpone,
                   icon: const Icon(Icons.update, size: 18),
                   label: const Text('일정 미루기'),

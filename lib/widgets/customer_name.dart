@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/customer.dart';
 import '../models/customer_overview.dart';
+import '../models/herb_alert.dart';
 import '../theme.dart';
 
 /// 지금 연락해야 하는 환자면 이름을 빛나게 할 색. 아니면 null.
@@ -47,7 +48,7 @@ class CustomerName extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
         fontSize: fontSize,
-        color: herbal ? kHerbPurple : color,
+        color: herbal ? herbColorOf(customer.herbType) : color,
         fontWeight: herbal ? FontWeight.w900 : FontWeight.bold,
         decoration: strike ? TextDecoration.lineThrough : null,
       ),
@@ -60,7 +61,10 @@ class CustomerName extends StatelessWidget {
               ? name
               : _GlowingName(color: glow, child: name),
         ),
-        if (herbal) ...[const SizedBox(width: 6), const HerbBadge()],
+        if (herbal) ...[
+          const SizedBox(width: 6),
+          HerbBadge(type: customer.herbType),
+        ],
       ],
     );
   }
@@ -68,20 +72,23 @@ class CustomerName extends StatelessWidget {
 
 /// '🌿 한약' 배지.
 class HerbBadge extends StatelessWidget {
-  const HerbBadge({super.key, this.label = '한약'});
+  const HerbBadge({super.key, required this.type, this.label});
 
-  final String label;
+  final HerbType type;
+
+  /// null 이면 '//건//', '//비급//' 같은 종류 표시.
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: kHerbPurple,
+        color: herbColorOf(type),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        '🌿 $label',
+        '🌿 ${label ?? type.nameTag}',
         style: const TextStyle(
           color: Colors.white,
           fontSize: 11,
@@ -156,3 +163,7 @@ class _GlowingNameState extends State<_GlowingName>
     );
   }
 }
+
+/// 한약 종류별 색. 건보첩약 = 청록, 비급여 = 보라.
+Color herbColorOf(HerbType type) =>
+    type == HerbType.insured ? kHerbTeal : kHerbPurple;

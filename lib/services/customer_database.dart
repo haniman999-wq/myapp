@@ -33,7 +33,7 @@ class CustomerDatabase {
     final path = join(databasesPath, 'my_customers.db');
     return openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: (db, version) async {
         await _createMetaTable(db);
         await db.execute('''
@@ -44,6 +44,7 @@ class CustomerDatabase {
             gender TEXT NOT NULL,
             memo TEXT NOT NULL DEFAULT '',
             herbStart TEXT,
+            herbType TEXT,
             createdAt TEXT NOT NULL
           )
         ''');
@@ -71,6 +72,13 @@ class CustomerDatabase {
           // ver.6: 예약 시각
           await db.execute(
             'ALTER TABLE appointments ADD COLUMN minuteOfDay INTEGER',
+          );
+        }
+        if (oldVersion < 7) {
+          // ver.7: 한약 종류 (건보첩약 / 비급여). 기존 한약 환자는 비급여로.
+          await db.execute('ALTER TABLE customers ADD COLUMN herbType TEXT');
+          await db.execute(
+            "UPDATE customers SET herbType = 'nonInsured' WHERE herbStart IS NOT NULL",
           );
         }
       },
@@ -254,12 +262,13 @@ class CustomerDatabase {
     required int customerId,
     required DateTime start,
     required List<DateTime> dates,
+    required HerbType type,
   }) async {
     final db = await database;
     await db.transaction((txn) async {
       await txn.update(
         'customers',
-        {'herbStart': toDbDate(start)},
+        {'herbStart': toDbDate(start), 'herbType': type.dbValue},
         where: 'id = ?',
         whereArgs: [customerId],
       );
@@ -337,7 +346,7 @@ class CustomerDatabase {
     await db.transaction((txn) async {
       await txn.update(
         'customers',
-        {'herbStart': null},
+        {'herbStart': null, 'herbType': null},
         where: 'id = ?',
         whereArgs: [customerId],
       );

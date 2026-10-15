@@ -173,7 +173,7 @@ class DailySummary {
       final h = o.herbReminderDayOn(day);
       final r = o.revisitReminderDayOn(day);
       if (h != null) {
-        herb.add(label(o.customer.name, h));
+        herb.add(label('${o.customer.name}${o.customer.herbType.nameTag}', h));
       } else if (r != null) {
         // 둘 다 해당하면 복약 확인 쪽으로 한 번만 셉니다.
         revisit.add(label(o.customer.name, r));
