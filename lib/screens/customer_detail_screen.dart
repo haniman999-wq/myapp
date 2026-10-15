@@ -232,6 +232,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               for (final a in history)
                 _AppointmentTile(
                   appointment: a,
+                  visitNumber: overview.visitNumberOf(a),
                   onTap: () => _openSheet(customer, existing: a),
                   onMark: (status) =>
                       _database.saveAppointment(a.copyWith(status: status)),
@@ -583,11 +584,15 @@ class _ContactBanner extends StatelessWidget {
 class _AppointmentTile extends StatelessWidget {
   const _AppointmentTile({
     required this.appointment,
+    this.visitNumber,
     required this.onTap,
     required this.onMark,
   });
 
   final Appointment appointment;
+
+  /// 몇 회차인지 (취소·노쇼는 null).
+  final int? visitNumber;
   final VoidCallback onTap;
   final ValueChanged<AppointmentStatus> onMark;
 
@@ -597,10 +602,26 @@ class _AppointmentTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       leading: Icon(Icons.circle, size: 12, color: a.status.color),
-      title: Text(
-        a.timeLabel == null
-            ? formatDateWithWeekday(a.date)
-            : '${formatDateWithWeekday(a.date)}  ${a.timeLabel}',
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              a.timeLabel == null
+                  ? formatDateWithWeekday(a.date)
+                  : '${formatDateWithWeekday(a.date)}  ${a.timeLabel}',
+            ),
+          ),
+          if (visitNumber != null) ...[
+            const SizedBox(width: 8),
+            if (visitNumber == kMilestoneVisit)
+              MilestoneBadge(number: visitNumber!, size: 22)
+            else
+              Text(
+                '$visitNumber회차',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+          ],
+        ],
       ),
       subtitle: a.needsCheck || a.memo.isNotEmpty
           ? Column(

@@ -22,3 +22,6 @@ const Color kGlowGold = Color(0xFFFFB300);
 
 /// 건보첩약 환자 표시 색 (이름·배지). 비급여(보라)와 구분됩니다.
 const Color kHerbTeal = Color(0xFF00796B);
+
+/// 기념 회차(5회차) 동그라미 숫자 색.
+const Color kMilestonePink = Color(0xFFE91E63);

@@ -287,6 +287,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           entry: e,
                           number: i + 1,
                           glow: alertGlowOf(_overviewById[e.customer.id]),
+                          milestone: _overviewById[e.customer.id]?.milestoneOf(
+                            e.appointment,
+                          ),
                           onTap: () => _openDetail(e.customer),
                           onStatusTap: () => showAppointmentSheet(
                             context,
@@ -481,6 +484,7 @@ class _DayCell extends StatelessWidget {
 /// 선택한 날의 예약자 한 줄. 누르면 환자 상세, 오른쪽 상태 배지를 누르면 상태 변경.
 class _EntryTile extends StatelessWidget {
   const _EntryTile({
+    this.milestone,
     this.glow,
     required this.entry,
     required this.number,
@@ -493,6 +497,9 @@ class _EntryTile extends StatelessWidget {
 
   /// 연락 필요 환자면 이름을 빛나게 할 색.
   final Color? glow;
+
+  /// 5회차 같은 기념 회차면 그 숫자.
+  final int? milestone;
   final VoidCallback onTap;
   final VoidCallback onStatusTap;
 
@@ -518,7 +525,12 @@ class _EntryTile extends StatelessWidget {
           number: number,
           color: statusColor,
         ),
-        title: CustomerName(customer: c, strike: entry.isCancelled, glow: glow),
+        title: CustomerName(
+          customer: c,
+          strike: entry.isCancelled,
+          glow: glow,
+          milestone: milestone,
+        ),
         subtitle: Text(
           memo.isEmpty ? c.phone : '${c.phone}  ·  $memo',
           maxLines: 1,

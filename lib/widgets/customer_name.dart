@@ -24,6 +24,7 @@ class CustomerName extends StatelessWidget {
     this.color,
     this.strike = false,
     this.glow,
+    this.milestone,
   });
 
   final Customer customer;
@@ -37,6 +38,9 @@ class CustomerName extends StatelessWidget {
 
   /// 빛나게 할 색. [alertGlowOf] 로 정합니다.
   final Color? glow;
+
+  /// 기념 회차(예: 5회차)면 그 숫자. 이름 뒤에 반짝이는 동그라미로 붙습니다.
+  final int? milestone;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +68,10 @@ class CustomerName extends StatelessWidget {
         if (herbal) ...[
           const SizedBox(width: 6),
           HerbBadge(type: customer.herbType),
+        ],
+        if (milestone != null) ...[
+          const SizedBox(width: 6),
+          MilestoneBadge(number: milestone!),
         ],
       ],
     );
@@ -167,3 +175,71 @@ class _GlowingNameState extends State<_GlowingName>
 /// 한약 종류별 색. 건보첩약 = 청록, 비급여 = 보라.
 Color herbColorOf(HerbType type) =>
     type == HerbType.insured ? kHerbTeal : kHerbPurple;
+
+/// 회차 표시: 동그라미 안에 숫자가 들어 있고, 빛이 번졌다 줄었다 하며 반짝입니다.
+class MilestoneBadge extends StatefulWidget {
+  const MilestoneBadge({super.key, required this.number, this.size = 24});
+
+  final int number;
+  final double size;
+
+  @override
+  State<MilestoneBadge> createState() => _MilestoneBadgeState();
+}
+
+class _MilestoneBadgeState extends State<MilestoneBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 650),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const c = kMilestonePink;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = Curves.easeInOut.transform(_controller.value);
+        return Transform.scale(
+          scale: 1 + 0.12 * t,
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [Color.lerp(c, Colors.white, 0.35 * t)!, c],
+              ),
+              border: Border.all(color: Colors.white, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: c.withValues(alpha: 0.35 + 0.5 * t),
+                  blurRadius: 4 + 10 * t,
+                  spreadRadius: 1 + 2 * t,
+                ),
+              ],
+            ),
+            child: child,
+          ),
+        );
+      },
+      child: Text(
+        '${widget.number}',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          fontSize: widget.size * 0.6,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}

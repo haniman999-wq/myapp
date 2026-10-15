@@ -9,6 +9,9 @@ const int kRevisitDays = 14;
 /// 연락 안 한 환자를 며칠 동안 계속 알릴지. 이 기간이 지나면 '놓친 연락'으로 옮깁니다.
 const int kMaxReminderDays = 7;
 
+/// 이 회차의 예약·내원은 이름 뒤에 반짝이는 동그라미 숫자로 표시합니다.
+const int kMilestoneVisit = 5;
+
 /// 환자 + 그 환자의 예약 기록을 묶어 '연락 필요' 같은 상태를 계산합니다.
 ///
 /// 상태는 DB 에 저장하지 않고 매번 계산합니다. 날짜가 바뀌면 자동으로 맞아집니다.
@@ -116,6 +119,50 @@ class CustomerOverview {
     final start = customer.herbStart;
     if (start == null) return '복약 확인';
     return '복약 ${alert.dayFrom(start)}일';
+  }
+
+  // ───────── 회차 ─────────
+
+  /// 취소·노쇼를 뺀 예약·내원을 날짜·시간 순으로 센 회차 (1회차부터).
+  late final Map<Appointment, int> _visitNumbers = () {
+    final counted =
+        appointments
+            .where(
+              (a) =>
+                  a.status != AppointmentStatus.cancelled &&
+                  a.status != AppointmentStatus.noShow,
+            )
+            .toList()
+          ..sort((a, b) {
+            final d = a.date.compareTo(b.date);
+            if (d != 0) return d;
+            final t = (a.minuteOfDay ?? 24 * 60).compareTo(
+              b.minuteOfDay ?? 24 * 60,
+            );
+            if (t != 0) return t;
+            return (a.id ?? 0).compareTo(b.id ?? 0);
+          });
+    return {for (final (i, a) in counted.indexed) a: i + 1};
+  }();
+
+  /// 이 기록이 몇 회차인지. 취소·노쇼면 null.
+  int? visitNumberOf(Appointment a) {
+    for (final e in _visitNumbers.entries) {
+      if (identical(e.key, a) || (a.id != null && e.key.id == a.id)) {
+        return e.value;
+      }
+    }
+    return null;
+  }
+
+  /// 이 기록이 [kMilestoneVisit] 회차면 그 숫자, 아니면 null.
+  int? milestoneOf(Appointment a) =>
+      visitNumberOf(a) == kMilestoneVisit ? kMilestoneVisit : null;
+
+  /// 다음 예약이 [kMilestoneVisit] 회차면 그 숫자 (환자 목록 표시용).
+  int? get upcomingMilestone {
+    final next = nextBooking;
+    return next == null ? null : milestoneOf(next);
   }
 
   /// 가장 최근 '내원' 날짜.

@@ -215,6 +215,30 @@ void main() {
       expect(Customer.fromMap(c.toMap()).herbType, HerbType.insured);
     });
   });
+
+  group('회차', () {
+    test('취소·노쇼를 빼고 날짜 순으로 센다, 5회차 표시', () {
+      final o = overviewWith([
+        (-40, visited), // 1
+        (-30, AppointmentStatus.noShow), // 제외
+        (-25, visited), // 2
+        (-20, AppointmentStatus.cancelled), // 제외
+        (-15, visited), // 3
+        (-8, visited), // 4
+        (3, booked), // 5
+        (10, booked), // 6
+      ]);
+      final byDays = {
+        for (final a in o.appointments) today().difference(a.date).inDays: a,
+      };
+      expect(o.visitNumberOf(byDays[40]!), 1);
+      expect(o.visitNumberOf(byDays[30]!), isNull);
+      expect(o.visitNumberOf(byDays[-3]!), 5);
+      expect(o.milestoneOf(byDays[-3]!), 5);
+      expect(o.milestoneOf(byDays[-10]!), isNull);
+      expect(o.upcomingMilestone, 5); // 다음 예약이 5회차
+    });
+  });
 }
 
 CustomerOverview herbOverview({
