@@ -304,6 +304,24 @@ void main() {
       );
     });
   });
+
+  test('건보첩약은 에너지바를 쓰지 않는다', () {
+    final insured = Customer(
+      name: '건보',
+      phone: '010',
+      gender: '남',
+      herbStart: today(),
+      herbType: HerbType.insured,
+      herbDays: 30,
+      createdAt: today(),
+    );
+    expect(insured.hasEnergyBar, isFalse);
+    expect(insured.herbRemainingDays, isNull);
+    expect(
+      insured.copyWith(herbType: HerbType.nonInsured).hasEnergyBar,
+      isTrue,
+    );
+  });
 }
 
 CustomerOverview herbOverview({

@@ -69,8 +69,7 @@ class CustomerName extends StatelessWidget {
         else
           _GlowingName(color: glow, child: name),
         if (herbal) HerbBadge(type: customer.herbType),
-        if (herbal && customer.herbDays != null)
-          HerbEnergyBar(customer: customer),
+        if (customer.hasEnergyBar) HerbEnergyBar(customer: customer),
         if (milestone != null) MilestoneBadge(number: milestone!),
       ],
     );

@@ -31,12 +31,16 @@ class Customer {
   /// 지금 한약을 복용 중인 환자인지.
   bool get isHerbal => herbStart != null;
 
+  /// 에너지바를 보여줄지. 건보첩약은 10일치씩 나가서 복약 기간·에너지바를 쓰지 않습니다.
+  bool get hasEnergyBar =>
+      isHerbal && herbType == HerbType.nonInsured && herbDays != null;
+
   /// 남은 복약 일수 (0 ~ [herbDays]). 기간을 정하지 않았으면 null.
   /// 일정 미루기로 시작일이 뒤로 가면 남은 일수도 그만큼 늘어납니다.
   int? get herbRemainingDays {
-    final start = herbStart;
-    final days = herbDays;
-    if (start == null || days == null) return null;
+    if (!hasEnergyBar) return null;
+    final start = herbStart!;
+    final days = herbDays!;
     final end = dateOnly(start).add(Duration(days: days));
     return end.difference(today()).inDays.clamp(0, days);
   }

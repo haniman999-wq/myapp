@@ -372,7 +372,7 @@ class _HerbCard extends StatelessWidget {
             '${elapsed >= 0 ? '  ·  오늘 복약 $elapsed일째' : ''}',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          if (overview.customer.herbDays != null) ...[
+          if (overview.customer.hasEnergyBar) ...[
             const SizedBox(height: 8),
             Row(
               children: [

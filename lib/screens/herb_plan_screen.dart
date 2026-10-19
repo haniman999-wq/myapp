@@ -64,6 +64,8 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
   /// 종류를 바꾸면, 알림 날짜를 아직 손대지 않았을 때(기본값 그대로)만 새 종류의 기본 날짜로 바꿉니다.
   void _changeType(HerbType type) {
     if (type == _type) return;
+    // 비급여로 바꿀 때 기간이 비어 있으면 1개월을 기본으로.
+    if (type == HerbType.nonInsured) _days ??= kHerbDurations.first;
     final untouched =
         _dates.isEmpty || _sameDates(_dates, _defaultDatesFor(_type));
     setState(() {
@@ -139,7 +141,7 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
       start: _start,
       dates: _dates,
       type: _type,
-      days: _days,
+      days: _type == HerbType.nonInsured ? _days : null,
     );
     if (mounted) Navigator.of(context).pop(true);
   }
@@ -204,53 +206,57 @@ class _HerbPlanScreenState extends State<HerbPlanScreen> {
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            '복약 기간',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: kHerbPurple,
-              fontWeight: FontWeight.bold,
+          // 복약 기간 · 에너지바는 비급여한약만 (건보첩약은 10일치씩 나감)
+          if (_type == HerbType.nonInsured) ...[
+            const SizedBox(height: 16),
+            Text(
+              '복약 기간',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: kHerbPurple,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<int>(
-            segments: [
-              for (final d in kHerbDurations)
-                ButtonSegment(value: d, label: Text(herbDurationLabel(d))),
-            ],
-            selected: {?_days},
-            emptySelectionAllowed: true,
-            showSelectedIcon: false,
-            style: SegmentedButton.styleFrom(
-              selectedBackgroundColor: herbColorOf(
-                _type,
-              ).withValues(alpha: 0.18),
-              selectedForegroundColor: herbColorOf(_type),
-            ),
-            onSelectionChanged: (v) =>
-                setState(() => _days = v.isEmpty ? null : v.first),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
-            child: Row(
-              children: [
-                HerbEnergyBar(
-                  customer: widget.customer.copyWith(
-                    herbStart: _start,
-                    herbDays: _days,
-                  ),
-                  showDays: true,
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    '1칸 = 15일. 날이 지나면 한 칸씩 줄어요.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ),
+            const SizedBox(height: 8),
+            SegmentedButton<int>(
+              segments: [
+                for (final d in kHerbDurations)
+                  ButtonSegment(value: d, label: Text(herbDurationLabel(d))),
               ],
+              selected: {?_days},
+              emptySelectionAllowed: true,
+              showSelectedIcon: false,
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: herbColorOf(
+                  _type,
+                ).withValues(alpha: 0.18),
+                selectedForegroundColor: herbColorOf(_type),
+              ),
+              onSelectionChanged: (v) =>
+                  setState(() => _days = v.isEmpty ? null : v.first),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+              child: Row(
+                children: [
+                  HerbEnergyBar(
+                    customer: widget.customer.copyWith(
+                      herbStart: _start,
+                      herbType: _type,
+                      herbDays: _days,
+                    ),
+                    showDays: true,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      '1칸 = 15일. 날이 지나면 한 칸씩 줄어요.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Card(
             child: ListTile(
