@@ -122,6 +122,11 @@ flutter_launcher_icons:
   adaptive_icon_background: "#2BC392"
   adaptive_icon_foreground: "assets/icon/app_icon.png"
   adaptive_icon_foreground_inset: 16
+  # Windows 프로그램 아이콘
+  windows:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    icon_size: 256
 
 # shared_preferences_android 2.5.x 는 릴리스 빌드에서 시작 시 멈추는 문제가 있어 2.4.x 로 고정합니다.
 dependency_overrides:

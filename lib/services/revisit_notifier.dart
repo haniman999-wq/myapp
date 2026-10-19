@@ -40,13 +40,23 @@ class RevisitNotifier {
       >();
 
   Future<void> init() async {
-    // 지금은 안드로이드 한 기기에서만 사용합니다.
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    // 휴대폰(안드로이드)과 접수 PC(윈도우)에서 알림을 씁니다.
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.windows)) {
+      return;
+    }
     try {
       tz_data.initializeTimeZones();
       await _plugin.initialize(
         settings: const InitializationSettings(
           android: AndroidInitializationSettings('ic_stat_notify'),
+          // 윈도우: 오른쪽 아래 알림. 앱이 꺼져 있어도 PC가 켜져 있으면 정해진 시각에 떠요.
+          windows: WindowsInitializationSettings(
+            appName: '내 환자의 모든 것',
+            appUserModelId: 'MyClinic.MyPatients',
+            guid: 'c3a7e1d2-5b4f-4e8a-9f61-2d7b0a4c8e15',
+          ),
         ),
         // 앱이 켜져 있을 때 알림을 누르면
         onDidReceiveNotificationResponse: (_) => openContactTab(),
@@ -151,6 +161,7 @@ class RevisitNotifier {
             visibility: NotificationVisibility.private,
             styleInformation: BigTextStyleInformation(summary.body),
           ),
+          windows: const WindowsNotificationDetails(),
         ),
         androidScheduleMode: mode,
       );
