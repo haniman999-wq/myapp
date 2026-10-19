@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
 import 'main_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -58,7 +60,9 @@ class _SplashScreenState extends State<SplashScreen>
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (_, animation, _) => const MainScreen(),
+        // 로그인돼 있으면 바로 첫 화면, 아니면 로그인 화면
+        pageBuilder: (_, animation, _) =>
+            AuthService.isSignedIn ? const MainScreen() : const LoginScreen(),
         transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(
             opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),

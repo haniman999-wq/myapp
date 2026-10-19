@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../services/app_navigation.dart';
 import '../services/customer_database.dart';
+import '../services/legacy_local_store.dart';
 import '../theme.dart';
 import '../widgets/blink.dart';
 import 'calendar_screen.dart';
 import 'contact_screen.dart';
 import 'home_screen.dart';
+import 'migrate_dialog.dart';
 import 'search_screen.dart';
 import 'settings_screen.dart';
 
@@ -33,6 +35,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _reloadCount();
     // 알림으로 앱을 연 경우 첫 화면부터 '연락' 탭
     _handleTabRequest();
+    // 서버로 옮기기 전 이 휴대폰에 쌓인 데이터가 있으면 한 번 물어봅니다.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (await LegacyLocalStore.pendingCount() > 0 && mounted) {
+        await migrateLegacyData(context);
+      }
+    });
   }
 
   @override
@@ -81,7 +89,58 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     ];
 
     return Scaffold(
-      body: screens[_selectedIndex],
+      body: Column(
+        children: [
+          // 인터넷이 끊겨 마지막으로 받은 내용을 보여줄 때
+          ValueListenableBuilder<bool>(
+            valueListenable: _database.offline,
+            builder: (context, offline, _) => !offline
+                ? const SizedBox.shrink()
+                : Material(
+                    color: Colors.grey.shade800,
+                    child: SafeArea(
+                      bottom: false,
+                      child: InkWell(
+                        onTap: _database.notifyChanged,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.cloud_off,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '인터넷 연결이 없어 마지막으로 받은 내용을 보여주고 있어요. 저장은 연결된 뒤에 해 주세요.',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '다시 시도',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
+          Expanded(child: screens[_selectedIndex]),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onTabTapped,

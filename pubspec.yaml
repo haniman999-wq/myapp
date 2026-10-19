@@ -48,6 +48,8 @@ dependencies:
   share_plus: ^13.3.0
   file_picker: ^13.1.0
   path_provider: ^2.1.6
+  supabase_flutter: ^2.18.3
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +78,7 @@ flutter:
   # 앱 사용법 화면의 캡처 이미지 (tool/make_help_images.dart 로 생성)
   assets:
     - assets/help/
+    - assets/icon/app_icon.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -119,3 +122,7 @@ flutter_launcher_icons:
   adaptive_icon_background: "#2BC392"
   adaptive_icon_foreground: "assets/icon/app_icon.png"
   adaptive_icon_foreground_inset: 16
+
+# shared_preferences_android 2.5.x 는 릴리스 빌드에서 시작 시 멈추는 문제가 있어 2.4.x 로 고정합니다.
+dependency_overrides:
+  shared_preferences_android: ">=2.4.0 <2.5.0"

@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../models/customer_overview.dart';
 import '../services/backup_service.dart';
+import '../services/auth_service.dart';
 import '../services/customer_database.dart';
+import '../services/legacy_local_store.dart';
 import '../services/revisit_notifier.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
 import 'help_screen.dart';
+import 'login_screen.dart';
+import 'migrate_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -21,6 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late Future<DateTime?> _lastBackupFuture;
   late Future<(int, int)> _notifyTimeFuture;
   late Future<bool> _onTimeFuture;
+  late Future<int> _legacyFuture = LegacyLocalStore.pendingCount();
   bool _busy = false;
 
   @override
@@ -89,7 +94,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           '${backup.exportedAt == null ? '' : '백업 날짜: ${formatDate(backup.exportedAt)}\n'}'
           '\n환자 ${backup.patientCount}명 · 예약/내원 ${backup.appointmentCount}건'
           ' · 복약 알림 ${backup.herbAlertCount}건\n\n'
-          '⚠️ 지금 앱에 있는 데이터는 모두 지워지고 이 백업 내용으로 바뀌어요.',
+          '⚠️ 공유 서버의 데이터가 모두 지워지고 이 백업 내용으로 바뀌어요. '
+          '접수 PC와 모든 직원 휴대폰에 함께 적용돼요.',
         ),
         actions: [
           TextButton(
@@ -129,13 +135,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) _reload();
   }
 
+  Future<void> _signOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('로그아웃'),
+        content: const Text(
+          '이 기기에서 로그아웃할까요?\n서버의 데이터는 그대로 남고, 다시 로그인하면 볼 수 있어요.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('로그아웃'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await AuthService.signOut();
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
+  }
+
+  Future<void> _migrateLegacy() => _run(() async {
+    if (!await migrateLegacyData(context)) return;
+    if (!mounted) return;
+    setState(() => _legacyFuture = LegacyLocalStore.pendingCount());
+  });
+
   Future<void> _confirmDeleteAll() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('전체 삭제'),
         content: const Text(
-          '모든 환자 정보를 지울까요?\n삭제하면 되돌릴 수 없습니다.\n\n'
+          '서버의 모든 환자 정보를 지울까요?\n'
+          '접수 PC와 모든 직원 휴대폰에서 함께 사라지고, 되돌릴 수 없습니다.\n\n'
           '지우기 전에 먼저 백업해 두는 걸 권해요.',
         ),
         actions: [
@@ -194,6 +236,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const SizedBox(height: 20),
+          Card(
+            child: ListTile(
+              leading: const Icon(
+                Icons.account_circle,
+                color: kPrimaryGreenDark,
+              ),
+              title: Text(AuthService.email ?? '로그인 안 됨'),
+              subtitle: const Text('공유 서버에 로그인한 계정 · 모든 직원이 같은 데이터를 봐요'),
+              trailing: TextButton(
+                onPressed: _signOut,
+                child: const Text('로그아웃'),
+              ),
+            ),
+          ),
+          FutureBuilder<int>(
+            future: _legacyFuture,
+            builder: (context, snapshot) {
+              final count = snapshot.data ?? 0;
+              if (count == 0) return const SizedBox.shrink();
+              return Card(
+                color: const Color(0xFFFFF3E0),
+                child: ListTile(
+                  leading: const Icon(Icons.cloud_upload, color: Colors.orange),
+                  title: Text('이 휴대폰의 예전 데이터 $count명'),
+                  subtitle: const Text('눌러서 공유 서버로 옮기세요'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _busy ? null : _migrateLegacy,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
           Card(
             color: kPrimaryGreen.withValues(alpha: 0.1),
             child: ListTile(
