@@ -25,6 +25,12 @@ class AuthService {
       return null;
     } on AuthException catch (e) {
       final m = e.message.toLowerCase();
+      if (m.contains('host lookup') ||
+          m.contains('socketexception') ||
+          m.contains('clientexception') ||
+          m.contains('connection')) {
+        return '인터넷 연결을 확인해 주세요';
+      }
       if (m.contains('invalid login') || m.contains('invalid_credentials')) {
         return '이메일 또는 비밀번호가 맞지 않아요';
       }
