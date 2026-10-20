@@ -159,6 +159,18 @@ class CustomerOverview {
   int? milestoneOf(Appointment a) =>
       visitNumberOf(a) == kMilestoneVisit ? kMilestoneVisit : null;
 
+  /// 이 환자를 대표하는 진료과: 다음 예약의 과, 없으면 가장 최근 기록의 과.
+  int? get currentDeptId {
+    final next = nextBooking;
+    if (next?.deptId != null) return next!.deptId;
+    for (final a in appointments.reversed) {
+      if (a.deptId != null && a.status != AppointmentStatus.cancelled) {
+        return a.deptId;
+      }
+    }
+    return null;
+  }
+
   /// 다음 예약이 [kMilestoneVisit] 회차면 그 숫자 (환자 목록 표시용).
   int? get upcomingMilestone {
     final next = nextBooking;

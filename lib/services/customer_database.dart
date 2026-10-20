@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/appointment.dart';
 import '../models/customer.dart';
 import '../models/customer_overview.dart';
+import '../models/department.dart';
 import '../models/herb_alert.dart';
 import '../utils/date_format.dart';
 
@@ -65,7 +66,7 @@ class CustomerDatabase {
   void startRealtime() {
     stopRealtime();
     var channel = _client.channel('clinic-data');
-    for (final t in _tables) {
+    for (final t in [..._tables, ..._extraTables]) {
       channel = channel.onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
@@ -113,10 +114,29 @@ class CustomerDatabase {
     return rows;
   }
 
+  /// 진료과·직원 표. 서버에 2단계 SQL 을 아직 안 넣었으면 없을 수 있어서,
+  /// 없으면 빈 목록으로 두고 나머지 기능은 그대로 쓰게 합니다.
+  static const _extraTables = ['departments', 'staff'];
+
+  Future<List<Map<String, Object?>>> _fetchOptional(String table) async {
+    try {
+      return await _fetchAll(table);
+    } on PostgrestException catch (e) {
+      debugPrint('$table 표를 못 불러왔어요 (서버 설정 전?): ${e.message}');
+      return const [];
+    }
+  }
+
   Future<void> _load() async {
     try {
-      final results = await Future.wait(_tables.map(_fetchAll));
-      _snapshot = {for (final (i, t) in _tables.indexed) t: results[i]};
+      final results = await Future.wait([
+        ..._tables.map(_fetchAll),
+        ..._extraTables.map(_fetchOptional),
+      ]);
+      _snapshot = {
+        for (final (i, t) in [..._tables, ..._extraTables].indexed)
+          t: results[i],
+      };
       offline.value = false;
       // 인터넷이 끊겼을 때 보여줄 사본
       (await SharedPreferences.getInstance()).setString(
@@ -126,7 +146,11 @@ class CustomerDatabase {
     } catch (e) {
       debugPrint('서버에서 불러오기 실패: $e');
       offline.value = true;
-      _snapshot = await _readCache() ?? {for (final t in _tables) t: []};
+      _snapshot =
+          await _readCache() ??
+          {
+            for (final t in [..._tables, ..._extraTables]) t: [],
+          };
     }
   }
 
@@ -135,7 +159,7 @@ class CustomerDatabase {
     if (raw == null) return null;
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
     return {
-      for (final t in _tables)
+      for (final t in [..._tables, ..._extraTables])
         t: [
           for (final r in (decoded[t] as List? ?? const []))
             (r as Map).cast<String, Object?>(),
@@ -161,14 +185,62 @@ class CustomerDatabase {
       return result;
     } catch (e) {
       debugPrint('서버 저장 실패: $e');
+      // 권한 규칙에 막힌 경우(관리자 전용 기능 등)는 인터넷 문제와 구분해서 알립니다.
+      final denied = e is PostgrestException && e.code == '42501';
       messengerKey.currentState
         ?..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('인터넷 연결을 확인해 주세요. 저장하지 못했어요.')),
+          SnackBar(
+            content: Text(
+              denied
+                  ? '이 작업을 할 권한이 없어요. 원장님(관리자)에게 문의하세요.'
+                  : '인터넷 연결을 확인해 주세요. 저장하지 못했어요.',
+            ),
+          ),
         );
       throw const OfflineException();
     }
   }
+
+  // ───────── 진료과 · 직원 권한 ─────────
+
+  /// 진료과 번호 → 진료과. 마지막으로 불러온 내용 (화면에서 바로 배지 그릴 때).
+  Map<int, Department> get deptById => {
+    for (final r in _snapshot?['departments'] ?? const <Map<String, Object?>>[])
+      r['id'] as int: Department.fromMap(r),
+  };
+
+  /// 진료과 목록 (정렬 순서대로). 서버 설정 전이면 빈 목록.
+  Future<List<Department>> getDepartments() async {
+    final rows = (await _data())['departments'] ?? const [];
+    return rows.map(Department.fromMap).toList()
+      ..sort((a, b) => a.sort.compareTo(b.sort));
+  }
+
+  Future<void> renameDepartment(int id, String name) => _write(
+    (c) => c.from('departments').update({'name': name.trim()}).eq('id', id),
+  );
+
+  Future<List<StaffMember>> getStaff() async {
+    final rows = (await _data())['staff'] ?? const [];
+    return rows.map(StaffMember.fromMap).toList()
+      ..sort((a, b) => a.email.compareTo(b.email));
+  }
+
+  /// 지금 로그인한 직원의 권한. 목록에 없으면 null.
+  Future<StaffMember?> me() async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return null;
+    for (final s in await getStaff()) {
+      if (s.id == uid) return s;
+    }
+    return null;
+  }
+
+  Future<void> setStatsPermission(String staffId, bool allowed) => _write(
+    (c) =>
+        c.from('staff').update({'can_view_stats': allowed}).eq('id', staffId),
+  );
 
   /// 새 줄을 넣을 땐 id 를 빼서 서버가 번호를 매기게 합니다.
   static Map<String, Object?> _noId(Map<String, Object?> m) =>

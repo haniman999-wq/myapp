@@ -324,6 +324,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           title: CustomerName(
                             customer: o.customer,
                             glow: alertGlowOf(o),
+                            deptId: o.currentDeptId,
                           ),
                           subtitle: Text(o.customer.phone),
                           // 오늘이거나 지났는데 아직 확인 안 했으면 깜빡임
@@ -572,6 +573,7 @@ class _EntryTile extends StatelessWidget {
                   strike: entry.isCancelled,
                   glow: glow,
                   milestone: milestone,
+                  deptId: entry.appointment.deptId,
                 ),
               ),
               if (visitNumber != null && !firstVisit && milestone == null) ...[

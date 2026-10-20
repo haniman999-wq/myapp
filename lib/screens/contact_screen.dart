@@ -153,7 +153,10 @@ class _ContactScreenState extends State<ContactScreen> {
                 ListTile(
                   onTap: () => _openDetail(o),
                   leading: const Icon(Icons.schedule, color: Colors.grey),
-                  title: CustomerName(customer: o.customer),
+                  title: CustomerName(
+                    customer: o.customer,
+                    deptId: o.currentDeptId,
+                  ),
                   subtitle: Text(
                     '${formatDate(o.contactDueDate)} 부터 연락 · ${o.contactReason}',
                   ),
@@ -216,7 +219,11 @@ class _HerbTile extends StatelessWidget {
           child: const Text('🌿', style: TextStyle(fontSize: 18)),
         ),
       ),
-      title: CustomerName(customer: overview.customer, glow: kGlowGold),
+      title: CustomerName(
+        customer: overview.customer,
+        glow: kGlowGold,
+        deptId: overview.currentDeptId,
+      ),
       subtitle: Text(
         '${overview.herbLabel(alert)} 확인 · ${formatShortDate(alert.date)}'
         ' · ${late + 1}/$kMaxReminderDays일째 알림',
@@ -285,6 +292,7 @@ class _ContactTile extends StatelessWidget {
               child: CustomerName(
                 customer: overview.customer,
                 glow: alertGlowOf(overview),
+                deptId: overview.currentDeptId,
               ),
             ),
             if (contacted) ...[

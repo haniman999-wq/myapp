@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../models/customer.dart';
 import '../models/customer_overview.dart';
+import '../models/department.dart';
 import '../models/herb_alert.dart';
+import '../services/customer_database.dart';
 import '../theme.dart';
 import 'herb_energy_bar.dart';
 
@@ -26,6 +28,7 @@ class CustomerName extends StatelessWidget {
     this.strike = false,
     this.glow,
     this.milestone,
+    this.deptId,
   });
 
   final Customer customer;
@@ -42,6 +45,9 @@ class CustomerName extends StatelessWidget {
 
   /// 기념 회차(예: 5회차)면 그 숫자. 이름 뒤에 반짝이는 동그라미로 붙습니다.
   final int? milestone;
+
+  /// 진료과 번호. 있으면 이름 바로 뒤에 과 배지를 붙입니다.
+  final int? deptId;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +74,9 @@ class CustomerName extends StatelessWidget {
           name
         else
           _GlowingName(color: glow, child: name),
+        if (deptId != null &&
+            CustomerDatabase.instance.deptById[deptId] != null)
+          DeptBadge(dept: CustomerDatabase.instance.deptById[deptId]!),
         if (herbal) HerbBadge(type: customer.herbType),
         if (customer.hasEnergyBar) HerbEnergyBar(customer: customer),
         if (milestone != null) MilestoneBadge(number: milestone!),
@@ -236,6 +245,35 @@ class _MilestoneBadgeState extends State<MilestoneBadge>
           fontWeight: FontWeight.w900,
           fontSize: widget.size * 0.6,
           height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+/// 진료과 배지. 과마다 색이 다르고, 테두리만 있는 칸에 과 이름을 씁니다.
+class DeptBadge extends StatelessWidget {
+  const DeptBadge({super.key, required this.dept, this.fontSize = 11});
+
+  final Department dept;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = dept.color;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: c, width: 1.2),
+      ),
+      child: Text(
+        dept.name,
+        style: TextStyle(
+          color: c,
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

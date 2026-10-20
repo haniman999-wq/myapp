@@ -32,6 +32,9 @@ class Appointment {
   /// 이 날짜 기록에 남기는 메모 (치료 내용, 전달 사항 등).
   final String memo;
 
+  /// 진료과 (departments 표의 id). 정하지 않았으면 null.
+  final int? deptId;
+
   const Appointment({
     this.id,
     required this.customerId,
@@ -39,6 +42,7 @@ class Appointment {
     required this.status,
     this.minuteOfDay,
     this.memo = '',
+    this.deptId,
   });
 
   int? get hour => minuteOfDay == null ? null : minuteOfDay! ~/ 60;
@@ -57,7 +61,9 @@ class Appointment {
     AppointmentStatus? status,
     int? minuteOfDay,
     String? memo,
+    int? deptId,
     bool clearTime = false,
+    bool clearDept = false,
   }) {
     return Appointment(
       id: id,
@@ -66,6 +72,7 @@ class Appointment {
       status: status ?? this.status,
       minuteOfDay: clearTime ? null : (minuteOfDay ?? this.minuteOfDay),
       memo: memo ?? this.memo,
+      deptId: clearDept ? null : (deptId ?? this.deptId),
     );
   }
 
@@ -77,6 +84,8 @@ class Appointment {
       'status': status.dbValue,
       'minuteOfDay': minuteOfDay,
       'memo': memo,
+      // 진료과는 정했을 때만 보냅니다 (서버에 진료과 칸을 만들기 전에도 저장되게).
+      if (deptId != null) 'deptId': deptId,
     };
   }
 
@@ -88,6 +97,7 @@ class Appointment {
       status: AppointmentStatus.fromDb(map['status'] as String),
       minuteOfDay: map['minuteOfDay'] as int?,
       memo: (map['memo'] as String?) ?? '',
+      deptId: map['deptId'] as int?,
     );
   }
 }

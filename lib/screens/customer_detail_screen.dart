@@ -630,6 +630,11 @@ class _AppointmentTile extends StatelessWidget {
                   : '${formatDateWithWeekday(a.date)}  ${a.timeLabel}',
             ),
           ),
+          if (CustomerDatabase.instance.deptById[a.deptId]
+              case final dept?) ...[
+            const SizedBox(width: 8),
+            DeptBadge(dept: dept),
+          ],
           if (visitNumber != null) ...[
             const SizedBox(width: 8),
             if (visitNumber == kMilestoneVisit)

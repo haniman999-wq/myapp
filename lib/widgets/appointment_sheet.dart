@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/appointment.dart';
+import '../models/department.dart';
 import '../services/customer_database.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
@@ -49,6 +50,8 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
   late AppointmentStatus _status;
   int? _minuteOfDay;
   late final TextEditingController _memoController;
+  int? _deptId;
+  List<Department> _depts = const [];
 
   bool get _isEditing => widget.existing != null;
 
@@ -58,7 +61,25 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
     _date = widget.existing?.date ?? dateOnly(widget.initialDate ?? today());
     _status = widget.existing?.status ?? _defaultStatusFor(_date);
     _minuteOfDay = widget.existing?.minuteOfDay;
+    _deptId = widget.existing?.deptId;
+    _loadDepts();
     _memoController = TextEditingController(text: widget.existing?.memo ?? '');
+  }
+
+  /// 진료과 목록을 불러오고, 새 일정이면 이 환자가 최근에 다닌 과를 미리 골라 둡니다.
+  Future<void> _loadDepts() async {
+    final db = CustomerDatabase.instance;
+    final depts = await db.getDepartments();
+    int? guess = _deptId;
+    if (guess == null) {
+      guess = (await db.getOverview(widget.customerId))?.currentDeptId;
+      if (depts.length == 1) guess ??= depts.first.id;
+    }
+    if (!mounted) return;
+    setState(() {
+      _depts = depts;
+      _deptId = guess;
+    });
   }
 
   @override
@@ -112,6 +133,7 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
         status: _status,
         minuteOfDay: _minuteOfDay,
         clearTime: _minuteOfDay == null,
+        deptId: _deptId,
         memo: _memoController.text.trim(),
       ),
     );
@@ -180,6 +202,29 @@ class _AppointmentSheetState extends State<_AppointmentSheet> {
             ],
           ),
           const SizedBox(height: 16),
+          if (_depts.isNotEmpty) ...[
+            Text('진료과', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                for (final d in _depts)
+                  ChoiceChip(
+                    label: Text(d.name),
+                    selected: _deptId == d.id,
+                    selectedColor: d.color.withValues(alpha: 0.2),
+                    labelStyle: TextStyle(
+                      color: _deptId == d.id ? d.color : null,
+                      fontWeight: _deptId == d.id ? FontWeight.bold : null,
+                    ),
+                    side: BorderSide(color: d.color.withValues(alpha: 0.6)),
+                    onSelected: (_) => setState(() => _deptId = d.id),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+          ],
           SegmentedButton<AppointmentStatus>(
             segments: [
               for (final s in AppointmentStatus.values)

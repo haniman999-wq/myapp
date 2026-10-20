@@ -205,7 +205,10 @@ class _MissedTile extends StatelessWidget {
         backgroundColor: kMissedBrown.withValues(alpha: 0.15),
         child: const Icon(Icons.phone_missed, color: kMissedBrown),
       ),
-      title: CustomerName(customer: overview.customer),
+      title: CustomerName(
+        customer: overview.customer,
+        deptId: overview.currentDeptId,
+      ),
       subtitle: Text(detail),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

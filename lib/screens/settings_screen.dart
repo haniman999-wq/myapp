@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/customer_overview.dart';
+import '../models/department.dart';
 import '../services/backup_service.dart';
 import '../services/auth_service.dart';
 import '../services/customer_database.dart';
@@ -8,9 +9,11 @@ import '../services/legacy_local_store.dart';
 import '../services/revisit_notifier.dart';
 import '../theme.dart';
 import '../utils/date_format.dart';
+import 'admin_screen.dart';
 import 'help_screen.dart';
 import 'login_screen.dart';
 import 'migrate_dialog.dart';
+import 'stats_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -26,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late Future<(int, int)> _notifyTimeFuture;
   late Future<bool> _onTimeFuture;
   late Future<int> _legacyFuture = LegacyLocalStore.pendingCount();
+  late Future<StaffMember?> _meFuture;
   bool _busy = false;
 
   @override
@@ -49,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _lastBackupFuture = _database.getLastBackupAt();
       _notifyTimeFuture = _database.getNotifyTime();
       _onTimeFuture = RevisitNotifier.instance.canNotifyOnTime();
+      _meFuture = _database.me();
     });
   }
 
@@ -249,6 +254,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Text('로그아웃'),
               ),
             ),
+          ),
+          // 경영 통계 · 관리자 설정 (권한 있는 계정에만 보임)
+          FutureBuilder<StaffMember?>(
+            future: _meFuture,
+            builder: (context, snapshot) {
+              final me = snapshot.data;
+              final canStats = me != null && (me.canViewStats || me.isAdmin);
+              return Column(
+                children: [
+                  if (canStats)
+                    Card(
+                      color: const Color(0xFFECEFF1),
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.insights,
+                          color: Color(0xFF37474F),
+                        ),
+                        title: const Text(
+                          '경영 통계',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: const Text('과별 초진·재진·재진율·한약 비율 등'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const StatsScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (me?.isAdmin ?? false)
+                    Card(
+                      color: const Color(0xFFECEFF1),
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.admin_panel_settings,
+                          color: Color(0xFF37474F),
+                        ),
+                        title: const Text(
+                          '관리자 설정',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: const Text('진료과 이름, 직원 통계 권한'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AdminScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           FutureBuilder<int>(
             future: _legacyFuture,

@@ -122,6 +122,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       title: CustomerName(
                         customer: customer,
                         glow: alertGlowOf(overview),
+                        deptId: overview.currentDeptId,
                       ),
                       subtitle: Text(
                         '${customer.phone}  ·  최종내원 ${formatDate(overview.lastVisit)}',
